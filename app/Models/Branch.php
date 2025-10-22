@@ -49,6 +49,11 @@ class Branch extends Model
         return $this->hasMany(Expense::class);
     }
 
+    public function customers()
+    {
+        return $this->hasMany(Customer::class);
+    }
+
     /*
     public function dailyReports()
     {

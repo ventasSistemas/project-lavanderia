@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\BranchController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\AuthController;
@@ -39,6 +40,14 @@ Route::middleware('auth')->group(function () {
             Route::get('/', [BranchController::class, 'index'])->name('index');
             Route::post('/store', [BranchController::class, 'store'])->name('store');
             Route::put('/update/{branch}', [BranchController::class, 'update'])->name('update');
+        });
+
+        // Customers
+        Route::prefix('customers')->name('customers.')->group(function () {
+            Route::get('/', [CustomerController::class, 'index'])->name('index');
+            Route::post('/store', [CustomerController::class, 'store'])->name('store');
+            Route::put('/update/{customer}', [CustomerController::class, 'update'])->name('update');
+            Route::delete('/delete/{customer}', [CustomerController::class, 'destroy'])->name('destroy');
         });
 
     });

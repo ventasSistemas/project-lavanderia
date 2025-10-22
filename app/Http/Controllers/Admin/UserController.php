@@ -22,8 +22,8 @@ class UserController extends Controller
 
         $query = User::with(['role', 'branch']);
 
-        // Si el usuario autenticado es manager o subadmin → filtra solo los de su sucursal
-        if (in_array($user->role->name, ['manager', 'admin'])) {
+        // Solo manager o subadmin ven usuarios de su sucursal
+        if (in_array($user->role->name, ['manager', 'subadmin'])) {
             $query->where('branch_id', $user->branch_id);
         }
 
@@ -31,7 +31,7 @@ class UserController extends Controller
             ->when($search, function ($query, $search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('full_name', 'LIKE', "%{$search}%")
-                      ->orWhere('email', 'LIKE', "%{$search}%");
+                    ->orWhere('email', 'LIKE', "%{$search}%");
                 });
             })
             ->orderBy('id', 'desc')
@@ -120,7 +120,7 @@ class UserController extends Controller
 
     /**
      * Eliminar usuario.
-     */
+     
     public function destroy(User $user)
     {
         $authUser = Auth::user();
@@ -133,5 +133,5 @@ class UserController extends Controller
         $user->delete();
 
         return redirect()->back()->with('success', 'Usuario eliminado correctamente.');
-    }
+    }*/
 }

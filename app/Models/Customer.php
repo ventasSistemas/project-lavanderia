@@ -11,13 +11,12 @@ class Customer extends Model
 
     protected $fillable = [
         'user_id',
+        'branch_id', 
         'full_name',
         'phone',
-        //'email',
         'address',
         'document_number',
         'registration_date',
-        //'status',
     ];
 
     protected $casts = [
@@ -27,6 +26,11 @@ class Customer extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class); 
     }
 
     public function orders()

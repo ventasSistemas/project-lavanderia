@@ -16,7 +16,8 @@
             overflow-x: hidden;
         }
         .sidebar {
-            background: #0b3a6d;
+            background: #000000;
+            /*background: #0b3a6d;*/
             color: #fff;
             width: 260px;
             position: fixed;

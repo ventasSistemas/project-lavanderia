@@ -1,12 +1,17 @@
 <div class="sidebar d-flex flex-column p-2">
-    <div class="text-center mb-4">
-        <i class="fa-solid fa-circle-user fa-6x me-2 text-light"></i>
-        <h3 style="margin-top: 20px;">CleanWash</h3>
+    <div class="text-center mb-2">
+        <div class="icon-container">
+            <i class="fa-solid fa-house-flood-water fa-3x me-0 text-light"></i>
+        </div>
+        <h4 style="margin-top: 10px; color: rgb(5, 130, 255); font-weight: bold;">CleanWash</h4>
+        <p class="description">"Tu lavandería de confianza para un lavado rápido y de calidad."</p>
+        
     </div>
 
+    
     <ul class="nav flex-column">
+        
         <hr class="text-white">
-
         <!-- Dashboard -->
         <li>
             <a href="{{ route('admin.dashboard') }}" class="nav-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
@@ -62,7 +67,7 @@
         </li>
         <ul class="collapse" id="clientes">
             <li>
-                <a href="#" class="nav-link {{ request()->routeIs('admin.clientes') ? 'active' : '' }}">
+                <a href="{{ route('admin.customers.index') }}" class="nav-link {{ request()->routeIs('admin.customers.index') ? 'active' : '' }}">
                     <i class="fa-solid fa-users"></i> Todos los clientes
                 </a>
             </li>
@@ -152,3 +157,23 @@
         </div>
     </ul>
 </div>
+
+<style>
+.icon-container {
+    display: inline-block;
+    padding: 20px;
+    border: 5px solid white;
+    border-radius: 50%;
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
+.description {
+    font-size: 0.9rem; 
+    color: #979696;
+    margin-top: 10px; 
+    max-width: 500px; 
+    margin-left: auto;
+    margin-right: auto;
+    line-height: 1.4; 
+}
+</style>

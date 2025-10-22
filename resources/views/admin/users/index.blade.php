@@ -1,3 +1,4 @@
+<!--views/admin/users/index..blade.php-->
 @extends('admin.layouts.app')
 
 @section('content')
@@ -218,8 +219,12 @@
                         </div>
                     </div>
                     <div class="text-end mt-4">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-success">Guardar</button>
+                        <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">
+                            <i class="fa-solid fa-xmark me-1"></i> Cancelar
+                        </button>
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="fa-solid fa-save me-1"></i> Guardar
+                        </button>
                     </div>
                 </form>
             </div>

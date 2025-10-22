@@ -14,13 +14,12 @@ return new class extends Migration
         Schema::create('customers', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('branch_id')->nullable()->constrained('branches')->nullOnDelete();
             $table->string('full_name', 150);
             $table->string('phone', 9)->nullable();
-            //$table->string('email', 120)->nullable();
             $table->text('address')->nullable();
             $table->string('document_number', 50)->nullable();
             $table->dateTime('registration_date')->useCurrent();
-            //$table->enum('status', ['active', 'inactive'])->default('active');
             $table->timestamps();
         });
     }
