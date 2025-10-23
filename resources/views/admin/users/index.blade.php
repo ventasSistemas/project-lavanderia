@@ -136,8 +136,12 @@
                                                     </div>
                                                 </div>
                                                 <div class="text-end mt-4">
-                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                                    <button type="submit" class="btn btn-warning text-white">Actualizar</button>
+                                                    <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">
+                                                        <i class="fa-solid fa-xmark me-1"></i> Cancelar
+                                                    </button>
+                                                    <button type="submit" class="btn btn-warning text-white px-4">
+                                                        <i class="fa-solid fa-save me-1"></i> Actualizar
+                                                    </button>
                                                 </div>
                                             </form>
                                         </div>
@@ -164,7 +168,7 @@
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg rounded-4">
             <div class="modal-header bg-primary text-white rounded-top-4">
-                <h5 class="modal-title"><i class="fa-solid fa-user-plus me-2"></i> Nuevo Usuario</h5>
+                <h5 class="modal-title">+<i class="fa-solid fa-user-tie me-2"></i> Nuevo Usuario</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body px-4 py-3">

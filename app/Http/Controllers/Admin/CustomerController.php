@@ -36,7 +36,7 @@ class CustomerController extends Controller
 
         $customers = $query->orderBy('id', 'desc')->paginate(10);
 
-        // Para el admin se listan todas las sucursales (para seleccionar en el modal)
+        // Si es admin, obtiene todas las sucursales
         $branches = ($user->role->name === 'admin') ? Branch::orderBy('name')->get() : collect();
 
         $branchName = $user->branch->name ?? 'Sin sucursal asignada';
@@ -58,7 +58,7 @@ class CustomerController extends Controller
             'document_number' => 'nullable|string|max:50',
         ];
 
-        // Si el usuario es admin, puede elegir sucursal
+        // El admin puede elegir sucursal
         if ($user->role->name === 'admin') {
             $rules['branch_id'] = 'required|exists:branches,id';
         }
@@ -82,24 +82,35 @@ class CustomerController extends Controller
      */
     public function update(Request $request, Customer $customer)
     {
-        $request->validate([
+        $user = Auth::user();
+
+        $rules = [
             'full_name' => 'required|string|max:150',
             'phone' => 'nullable|string|max:9',
             'address' => 'nullable|string',
             'document_number' => 'nullable|string|max:50',
-        ]);
+        ];
 
-        $customer->update($request->only('full_name', 'phone', 'address', 'document_number'));
+        // Si el admin edita, puede moverlo de sucursal
+        if ($user->role->name === 'admin') {
+            $rules['branch_id'] = 'required|exists:branches,id';
+        }
+
+        $validated = $request->validate($rules);
+
+        $data = [
+            'full_name' => $validated['full_name'],
+            'phone' => $validated['phone'] ?? null,
+            'address' => $validated['address'] ?? null,
+            'document_number' => $validated['document_number'] ?? null,
+        ];
+
+        if ($user->role->name === 'admin') {
+            $data['branch_id'] = $validated['branch_id'];
+        }
+
+        $customer->update($data);
 
         return redirect()->back()->with('success', 'Cliente actualizado correctamente.');
     }
-
-    /**
-     * Eliminar cliente
-     
-    public function destroy(Customer $customer)
-    {
-        $customer->delete();
-        return redirect()->back()->with('success', 'Cliente eliminado correctamente.');
-    }*/
 }

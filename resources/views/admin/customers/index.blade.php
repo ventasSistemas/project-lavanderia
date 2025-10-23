@@ -81,7 +81,7 @@
                                 <div class="modal-dialog modal-lg modal-dialog-centered">
                                     <div class="modal-content border-0 shadow-lg rounded-4">
                                         <div class="modal-header bg-warning text-white rounded-top-4">
-                                            <h5 class="modal-title"><i class="fa-solid fa-user-pen me-2"></i> Editar Cliente</h5>
+                                            <h5 class="modal-title"><i class="fa-solid fa-pen me-2"></i> Editar Cliente</h5>
                                             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                                         </div>
                                         <div class="modal-body px-4 py-3">
@@ -105,14 +105,34 @@
                                                         <label class="form-label">Dirección</label>
                                                         <textarea name="address" class="form-control" rows="2">{{ $customer->address }}</textarea>
                                                     </div>
-                                                    <div class="col-md-12">
-                                                        <label class="form-label">Sucursal</label>
-                                                        <input type="text" class="form-control bg-light" value="{{ $customer->branch->name ?? 'Sin sucursal' }}" readonly>
-                                                    </div>
+
+                                                    @if($user->role->name === 'admin')
+                                                        <div class="col-md-12">
+                                                            <label class="form-label">Sucursal</label>
+                                                            <select name="branch_id" class="form-select" required>
+                                                                <option value="" disabled>Seleccionar sucursal</option>
+                                                                @foreach($branches as $branch)
+                                                                    <option value="{{ $branch->id }}" {{ $branch->id == $customer->branch_id ? 'selected' : '' }}>
+                                                                        {{ $branch->name }}
+                                                                    </option>
+                                                                @endforeach
+                                                            </select>
+                                                        </div>
+                                                    @else
+                                                        <div class="col-md-12">
+                                                            <label class="form-label">Sucursal</label>
+                                                            <input type="text" class="form-control bg-light" 
+                                                                value="{{ $customer->branch->name ?? 'Sin sucursal' }}" readonly>
+                                                        </div>
+                                                    @endif
                                                 </div>
                                                 <div class="text-end mt-4">
-                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                                    <button type="submit" class="btn btn-warning text-white">Actualizar</button>
+                                                    <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">
+                                                        <i class="fa-solid fa-xmark me-1"></i> Cancelar
+                                                    </button>
+                                                    <button type="submit" class="btn btn-warning text-white px-4">
+                                                        <i class="fa-solid fa-save me-1"></i> Actualizar
+                                                    </button>
                                                 </div>
                                             </form>
                                         </div>
@@ -139,7 +159,7 @@
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg rounded-4">
             <div class="modal-header bg-primary text-white rounded-top-4">
-                <h5 class="modal-title"><i class="fa-solid fa-user-plus me-2"></i> Nuevo Cliente</h5>
+                <h5 class="modal-title">+<i class="fa-solid fa-users me-2"></i> Nuevo Cliente</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body px-4 py-3">

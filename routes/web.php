@@ -1,6 +1,10 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\ServiceCategoryController;
+use App\Http\Controllers\Admin\ServiceController;
+use App\Http\Controllers\Admin\ServiceItemController;
+use App\Http\Controllers\Admin\ServiceComboController;
 use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\BranchController;
 use App\Http\Controllers\Admin\UserController;
@@ -48,6 +52,38 @@ Route::middleware('auth')->group(function () {
             Route::post('/store', [CustomerController::class, 'store'])->name('store');
             Route::put('/update/{customer}', [CustomerController::class, 'update'])->name('update');
             Route::delete('/delete/{customer}', [CustomerController::class, 'destroy'])->name('destroy');
+        });
+
+        // Service categories
+        Route::prefix('service-categories')->name('service-categories.')->group(function () {
+            Route::get('/', [ServiceCategoryController::class, 'index'])->name('index');
+            Route::post('/store', [ServiceCategoryController::class, 'store'])->name('store');
+            Route::put('/update/{serviceCategory}', [ServiceCategoryController::class, 'update'])->name('update');
+            Route::delete('/delete/{serviceCategory}', [ServiceCategoryController::class, 'destroy'])->name('destroy');
+        });
+
+        // Services
+        Route::prefix('services')->name('services.')->group(function () {
+            Route::get('/', [ServiceController::class, 'index'])->name('index');
+            Route::post('/store', [ServiceController::class, 'store'])->name('store');
+            Route::put('/update/{service}', [ServiceController::class, 'update'])->name('update');
+            Route::delete('/delete/{service}', [ServiceController::class, 'destroy'])->name('destroy');
+        });
+
+        // Service items
+        Route::prefix('service-items')->name('service-items.')->group(function () {
+            Route::get('/{service_id}', [ServiceItemController::class, 'index'])->name('index');
+            Route::post('/store', [ServiceItemController::class, 'store'])->name('store');
+            Route::put('/update/{serviceItem}', [ServiceItemController::class, 'update'])->name('update');
+            Route::delete('/delete/{serviceItem}', [ServiceItemController::class, 'destroy'])->name('destroy');
+        });
+
+        // Service combos
+        Route::prefix('service-combos')->name('service-combos.')->group(function () {
+            Route::get('/', [ServiceComboController::class, 'index'])->name('index');
+            Route::post('/store', [ServiceComboController::class, 'store'])->name('store');
+            Route::put('/update/{serviceCombo}', [ServiceComboController::class, 'update'])->name('update');
+            Route::delete('/delete/{serviceCombo}', [ServiceComboController::class, 'destroy'])->name('destroy');
         });
 
     });

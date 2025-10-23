@@ -82,15 +82,21 @@
         </li>
         <ul class="collapse" id="servicios">
             <li>
-                <a href="#" class="nav-link {{ request()->routeIs('admin.servicios') ? 'active' : '' }}">
-                    <i class="fa-solid fa-tags"></i> Lista de servicios
+                <a href="{{ route('admin.services.index') }}" class="nav-link {{ request()->routeIs('admin.services.index') ? 'active' : '' }}">
+                    <i class="fa-solid fa-layer-group"></i> Lista de Servicios
+                </a>
+            </li>
+            <!--
+            <li>
+                <a href="#" class="nav-link {{ request()->routeIs('admin.service-items.index') ? 'active' : '' }}">
+                    <i class="fa-solid fa-tags"></i> Lista de Items
                 </a>
             </li>
             <li>
-                <a href="#" class="nav-link {{ request()->routeIs('admin.tipo.servicio') ? 'active' : '' }}">
-                    <i class="fa-solid fa-layer-group"></i> Tipo de servicio
+                <a href="{{ route('admin.service-combos.index') }}" class="nav-link {{ request()->routeIs('admin.service-combos.index') ? 'active' : '' }}">
+                    <i class="fa-solid fa-tags"></i> Combos de servicio
                 </a>
-            </li>
+            </li>-->
         </ul>
 
         <!-- Informes -->

@@ -215,7 +215,7 @@
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg rounded-4">
             <div class="modal-header bg-primary text-white rounded-top-4">
-                <h5 class="modal-title fw-bold"><i class="fa-solid fa-building me-2"></i> Nueva Sucursal</h5>
+                <h5 class="modal-title fw-bold">+<i class="fa-solid fa-building me-2"></i> Nueva Sucursal</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body px-4 py-3">
