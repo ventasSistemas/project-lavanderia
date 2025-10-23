@@ -1,4 +1,5 @@
 @extends('admin.layouts.app')
+<!--Hacer como desplegable-->
 
 @section('title', 'Categorías y Servicios')
 

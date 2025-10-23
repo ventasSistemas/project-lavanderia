@@ -9,6 +9,11 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 
+    <!-- Pickr (Color Picker) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/themes/classic.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/pickr.min.js"></script>
+
+
     <style>
         body {
             background: #f8f9fa;
@@ -80,9 +85,28 @@
             transform-origin: center; 
         }
 
-        /* Cuando el panel está expandido (rotación hacia arriba) */
-        .rotate-up {
-            transform: rotate(180deg);  
+        /* Efecto hover más suave en las cards de categoría y servicio */
+        .category-card,
+        .service-card {
+            transition: all 0.5s cubic-bezier(0.25, 0.1, 0.25, 1);
+            cursor: pointer;
+        }
+
+        .category-card:hover,
+        .service-card:hover {
+            transform: translateY(-3px) scale(1.01);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.10);
+        }
+
+        /* Imagen con brillo suave */
+        .category-card img,
+        .service-card img {
+            transition: filter 0.5s ease;
+        }
+
+        .category-card:hover img,
+        .service-card:hover img {
+            filter: brightness(1.03);
         }
 
     </style>
@@ -98,6 +122,8 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+
+    @stack('scripts')
 
     <script>
         // Detectar cuando una sección se expande (colapsa) o se contrae (se despliega)
@@ -120,34 +146,33 @@
         });
 
         document.addEventListener('DOMContentLoaded', function() {
-    // Verifica si hay algún estado guardado en localStorage
-    const collapsedState = JSON.parse(localStorage.getItem('sidebarState')) || {};
+            // Verifica si hay algún estado guardado en localStorage
+            const collapsedState = JSON.parse(localStorage.getItem('sidebarState')) || {};
 
-    // Recorre todas las secciones colapsables
-    document.querySelectorAll('.collapse').forEach(function(collapse) {
-        const targetId = collapse.id;
-        const collapseElement = collapse;
-        
-        // Si la sección estaba abierta anteriormente, mantenla abierta
-        if (collapsedState[targetId]) {
-            const bootstrapCollapse = new bootstrap.Collapse(collapseElement, {
-                toggle: true
+            // Recorre todas las secciones colapsables
+            document.querySelectorAll('.collapse').forEach(function(collapse) {
+                const targetId = collapse.id;
+                const collapseElement = collapse;
+                
+                // Si la sección estaba abierta anteriormente, mantenla abierta
+                if (collapsedState[targetId]) {
+                    const bootstrapCollapse = new bootstrap.Collapse(collapseElement, {
+                        toggle: true
+                    });
+                }
+                
+                // Detecta cambios en el estado de cada sección (expansión/colapso)
+                collapseElement.addEventListener('shown.bs.collapse', function () {
+                    collapsedState[targetId] = true; // Guarda que esta sección está abierta
+                    localStorage.setItem('sidebarState', JSON.stringify(collapsedState)); // Guarda el estado
+                });
+
+                collapseElement.addEventListener('hidden.bs.collapse', function () {
+                    collapsedState[targetId] = false; // Guarda que esta sección está cerrada
+                    localStorage.setItem('sidebarState', JSON.stringify(collapsedState)); // Guarda el estado
+                });
             });
-        }
-        
-        // Detecta cambios en el estado de cada sección (expansión/colapso)
-        collapseElement.addEventListener('shown.bs.collapse', function () {
-            collapsedState[targetId] = true; // Guarda que esta sección está abierta
-            localStorage.setItem('sidebarState', JSON.stringify(collapsedState)); // Guarda el estado
         });
-
-        collapseElement.addEventListener('hidden.bs.collapse', function () {
-            collapsedState[targetId] = false; // Guarda que esta sección está cerrada
-            localStorage.setItem('sidebarState', JSON.stringify(collapsedState)); // Guarda el estado
-        });
-    });
-});
-
     </script>
 </body>
 </html>

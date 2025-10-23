@@ -22,8 +22,7 @@ return new class extends Migration
             $table->decimal('tax', 10, 2)->default(0);
             $table->decimal('final_total', 10, 2)->default(0);
             $table->foreignId('order_status_id')->constrained('order_status')->onDelete('restrict');
-            $table->dateTime('start_date')->nullable();
-            $table->dateTime('end_date')->nullable();
+            $table->dateTime('receipt_date')->nullable();
             $table->dateTime('delivery_date')->nullable();
             $table->enum('payment_status', ['pending', 'paid', 'partial'])->default('pending');
             $table->text('notes')->nullable();

@@ -26,19 +26,33 @@
             </a>
         </li>
 
-        <!-- Pedidos -->
-        <li>
-            <a href="#" class="nav-link {{ request()->routeIs('admin.pedidos') ? 'active' : '' }}">
-                <i class="fa-solid fa-box"></i> Pedidos
+        <li class="mt-3 fw-bold text-uppercase small" data-bs-toggle="collapse" data-bs-target="#ordenes" aria-expanded="false" aria-controls="ordenes">
+            <a href="#" class="nav-link">
+                <i class="fa-solid fa-tags"></i> Ordenes
+                <i class="fa-solid fa-chevron-down float-end toggle-icon"></i>
             </a>
         </li>
+        <ul class="collapse" id="ordenes">
+            <!-- Ordenes -->
+            <li>
+                <a href="{{ route('admin.order-status.index') }}" class="nav-link {{ request()->routeIs('admin.order-status.index') ? 'active' : '' }}">
+                    <i class="fa-solid fa-box"></i> Estados
+                </a>
+            </li>
 
-        <!-- Estado de pedidos -->
-        <li>
-            <a href="#" class="nav-link {{ request()->routeIs('admin.estado.pedidos') ? 'active' : '' }}">
-                <i class="fa-solid fa-display"></i> Estado de pedidos
-            </a>
-        </li>
+            <li>
+                <a href="{{ route('admin.orders.index') }}" class="nav-link {{ request()->routeIs('admin.orders.index') ? 'active' : '' }}">
+                    <i class="fa-solid fa-box"></i> Registrar Orden
+                </a>
+            </li>
+
+            <!-- Estado de ordenes -->
+            <li>
+                <a href="#" class="nav-link {{ request()->routeIs('admin.estado.pedidos') ? 'active' : '' }}">
+                    <i class="fa-solid fa-display"></i> Estado de Ordenes
+                </a>
+            </li>
+        </ul>
 
         <!-- Gastos -->
         <li class="mt-3 fw-bold text-uppercase small" data-bs-toggle="collapse" data-bs-target="#gastos" aria-expanded="false" aria-controls="gastos">

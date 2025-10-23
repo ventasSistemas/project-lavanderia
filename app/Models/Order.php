@@ -19,16 +19,14 @@ class Order extends Model
         'tax',
         'final_total',
         'order_status_id',
-        'start_date',
-        'end_date',
+        'receipt_date',
         'delivery_date',
         'payment_status',
         'notes',
     ];
 
     protected $casts = [
-        'start_date' => 'datetime',
-        'end_date' => 'datetime',
+        'receipt_date' => 'datetime',
         'delivery_date' => 'datetime',
         'total_amount' => 'decimal:2',
         'final_total' => 'decimal:2',

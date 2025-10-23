@@ -8,13 +8,6 @@ use Illuminate\Http\Request;
 
 class ServiceCategoryController extends Controller
 {
-    /*
-    public function index()
-    {
-        $categories = ServiceCategory::with('services')->get();
-        return view('admin.service_categories.index', compact('categories'));
-    }*/
-
     public function store(Request $request)
     {
         $request->validate([
