@@ -1,6 +1,11 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+
+use App\Http\Controllers\Admin\PosController;
+use App\Http\Controllers\Admin\TicketController;
+use App\Http\Controllers\Admin\PaymentSubmethodController;
+use App\Http\Controllers\Admin\PaymentMethodController;
 use App\Http\Controllers\Admin\OrderItemController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\OrderStatusController;
@@ -106,6 +111,12 @@ Route::middleware('auth')->group(function () {
             Route::get('/edit/{order}', [OrderController::class, 'edit'])->name('edit');
             Route::put('/update/{order}', [OrderController::class, 'update'])->name('update');
             Route::delete('/delete/{order}', [OrderController::class, 'destroy'])->name('destroy');
+            //Ticket
+            Route::get('/ticket/{id}', [TicketController::class, 'show'])->name('ticket');
+            //Llevar Lavanaderia / Estados
+            Route::post('/change-status', [OrderController::class, 'changeStatus'])->name('changeStatus');
+            Route::get('/change-status', [OrderController::class, 'changeStatusView'])->name('changeStatus.view');
+
         });
 
         // Order Items
@@ -116,6 +127,32 @@ Route::middleware('auth')->group(function () {
             Route::delete('/delete/{orderItem}', [OrderItemController::class, 'destroy'])->name('destroy');
         });
 
+        // Payment Methods
+        Route::prefix('payment-methods')->name('payment-methods.')->group(function () {
+            Route::get('/', [PaymentMethodController::class, 'index'])->name('index');
+            Route::get('/create', [PaymentMethodController::class, 'create'])->name('create');
+            Route::post('/store', [PaymentMethodController::class, 'store'])->name('store');
+            Route::get('/{paymentMethod}/edit', [PaymentMethodController::class, 'edit'])->name('edit');
+            Route::put('/{paymentMethod}', [PaymentMethodController::class, 'update'])->name('update');
+            Route::delete('/{paymentMethod}', [PaymentMethodController::class, 'destroy'])->name('destroy');
+        });
+
+        // Payment Submethods
+        Route::prefix('payment-submethods')->name('payment-submethods.')->group(function () {
+            Route::get('/', [PaymentSubmethodController::class, 'index'])->name('index');
+            Route::get('/by-method/{methodId}', [PaymentSubmethodController::class, 'getByMethod'])->name('byMethod');
+            Route::get('/create', [PaymentSubmethodController::class, 'create'])->name('create');
+            Route::post('/store', [PaymentSubmethodController::class, 'store'])->name('store');
+            Route::get('/{paymentSubmethod}/edit', [PaymentSubmethodController::class, 'edit'])->name('edit');
+            Route::put('/{paymentSubmethod}', [PaymentSubmethodController::class, 'update'])->name('update');
+            Route::delete('/{paymentSubmethod}', [PaymentSubmethodController::class, 'destroy'])->name('destroy');
+        });
+
+        //POS
+        Route::prefix('pos')->name('pos.')->group(function () {
+            Route::get('/', [PosController::class, 'index'])->name('index');
+            Route::get('/{orderNumber}/details', [PosController::class, 'findByNumber'])->name('findByNumber');
+        });
     });
 
 });

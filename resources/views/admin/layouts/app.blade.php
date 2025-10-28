@@ -109,6 +109,116 @@
             filter: brightness(1.03);
         }
 
+        /* ====== SIDEBAR ====== */
+        .sidebar {
+            width: 250px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            background: #212529;
+            transition: width 0.3s ease;
+            z-index: 1030;
+            overflow-x: hidden;
+        }
+
+        /* ====== MODO COLAPSADO ====== */
+        .sidebar.collapsed {
+            width: 80px;
+            overflow: hidden;
+        }
+
+        /* Oculta absolutamente todo el contenido interno */
+        .sidebar.collapsed * {
+            display: none !important;
+        }
+
+        /* Asegura que el fondo oscuro siga visible */
+        .sidebar.collapsed {
+            background: #212529;
+        }
+
+        /* ====== NAVBAR ====== */
+        .top-navbar {
+            position: fixed;
+            top: 0;
+            left: 250px;
+            right: 0;
+            height: 60px;
+            background: #fff;
+            transition: left 0.3s ease;
+            z-index: 1020;
+        }
+
+        /* Navbar ajustado al colapsar */
+        .sidebar.collapsed + .top-navbar {
+            left: 80px;
+        }
+
+        /* ====== CONTENIDO ====== */
+        .content {
+            margin-left: 250px;
+            padding: 80px 20px 20px 20px;
+            transition: margin-left 0.3s ease;
+        }
+
+        /* Contenido ajustado al colapsar */
+        .sidebar.collapsed ~ .content {
+            margin-left: 80px;
+        }
+
+        /* ====== DETALLES VISUALES ====== */
+        .icon-container {
+            display: inline-block;
+            padding: 20px;
+            border: 5px solid white;
+            border-radius: 50%;
+            background-color: rgba(0, 0, 0, 0.1);
+        }
+
+        .description {
+            font-size: 0.9rem;
+            color: #979696;
+            margin-top: 10px;
+            line-height: 1.4;
+        }
+
+        .section-title {
+            color: #adb5bd;
+            font-size: 0.8rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-top: 1rem;
+            margin-bottom: 0.4rem;
+            letter-spacing: 0.5px;
+        }
+
+        /*
+        .nav-link {
+            color: #eaeaea;
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }*/
+
+        /*
+        .nav-link-icon:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            transform: translateX(3px);
+        }*/
+
+        .nav-link.active {
+            background-color: #0d6efd;
+            color: #fff !important;
+        }
+
+        .sidebar hr {
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
     </style>
 </head>
 <body>
@@ -126,6 +236,32 @@
     @stack('scripts')
 
     <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.querySelector('.sidebar');
+            const toggleBtn = document.getElementById('toggleSidebar');
+            const topNavbar = document.querySelector('.top-navbar');
+            const content = document.querySelector('.content');
+
+            // Restaurar estado guardado
+            const savedState = localStorage.getItem('sidebar-collapsed') === 'true';
+            if (savedState) {
+                sidebar.classList.add('collapsed');
+                topNavbar.style.left = '80px';
+                content.style.marginLeft = '80px';
+            }
+
+            // Alternar sidebar
+            toggleBtn.addEventListener('click', () => {
+                sidebar.classList.toggle('collapsed');
+                const isCollapsed = sidebar.classList.contains('collapsed');
+
+                topNavbar.style.left = isCollapsed ? '80px' : '250px';
+                content.style.marginLeft = isCollapsed ? '80px' : '250px';
+
+                localStorage.setItem('sidebar-collapsed', isCollapsed);
+            });
+        });
+
         // Detectar cuando una sección se expande (colapsa) o se contrae (se despliega)
         document.querySelectorAll('.collapse').forEach(function(collapse) {
             collapse.addEventListener('shown.bs.collapse', function () {

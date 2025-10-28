@@ -57,10 +57,11 @@ class ServiceSeeder extends Seeder
             [
                 'service_category_id' => $unitario->id,
                 'name' => 'Polo',
-                'description' => 'Polo, manga lagar, manga corta.',
+                'description' => 'Polo, manga larga, manga corta.',
                 'base_price' => 2.00,
                 'unit_type' => 'unidad',
                 'estimated_time' => '24h',
+                'image' => 'images/services/1761175329_polo.png',
             ],
 
             // Servicios adicionales

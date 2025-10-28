@@ -17,11 +17,15 @@ return new class extends Migration
             $table->foreignId('customer_id')->constrained('customers')->onDelete('cascade');
             $table->foreignId('employee_id')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('branch_id')->constrained('branches')->onDelete('cascade');
+            $table->foreignId('payment_method_id')->nullable()->constrained('payment_methods')->nullOnDelete();
+            $table->foreignId('payment_submethod_id')->nullable()->constrained('payment_submethods')->nullOnDelete();
             $table->decimal('total_amount', 10, 2)->default(0);
             $table->decimal('discount', 10, 2)->default(0);
             $table->decimal('tax', 10, 2)->default(0);
             $table->decimal('final_total', 10, 2)->default(0);
             $table->foreignId('order_status_id')->constrained('order_status')->onDelete('restrict');
+            $table->decimal('payment_returned', 10, 2)->default(0);
+            $table->decimal('payment_amount', 10, 2)->default(0);
             $table->dateTime('receipt_date')->nullable();
             $table->dateTime('delivery_date')->nullable();
             $table->enum('payment_status', ['pending', 'paid', 'partial'])->default('pending');

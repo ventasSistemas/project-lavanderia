@@ -18,6 +18,8 @@ class DatabaseSeeder extends Seeder
             ServiceSeeder::class,
             //ServiceItemSeeder::class,
             //ServiceComboSeeder::class,
+            OrderStatusSeeder::class,
+            PaymentMethodSeeder::class,
         ]);
     }
 }

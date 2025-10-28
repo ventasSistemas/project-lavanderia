@@ -13,6 +13,7 @@ class UserSeeder extends Seeder
         // Obtener el ID del rol admin y user para asignarlo
         $adminRoleId = DB::table('roles')->where('name', 'admin')->first()->id;
         $userRoleId = DB::table('roles')->where('name', 'employee')->first()->id;
+        $managerRoleId = DB::table('roles')->where('name', 'manager')->first()->id;
 
         DB::table('users')->insert([
             [
@@ -29,6 +30,15 @@ class UserSeeder extends Seeder
                 'email' => 'employee@employee.com',
                 'password' => Hash::make('123456'),
                 'role_id' => $userRoleId,
+                'status' => 'active',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'full_name' => 'Gerente A',
+                'email' => 'gerentea@gmail.com',
+                'password' => Hash::make('123456'),
+                'role_id' => $managerRoleId,
                 'status' => 'active',
                 'created_at' => now(),
                 'updated_at' => now(),
