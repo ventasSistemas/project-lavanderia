@@ -2,6 +2,8 @@
 
 use Illuminate\Support\Facades\Route;
 
+use App\Http\Controllers\Admin\ComplementaryProductCategoryController;
+use App\Http\Controllers\Admin\ComplementaryProductController;
 use App\Http\Controllers\Admin\PosController;
 use App\Http\Controllers\Admin\TicketController;
 use App\Http\Controllers\Admin\PaymentSubmethodController;
@@ -146,6 +148,22 @@ Route::middleware('auth')->group(function () {
             Route::get('/{paymentSubmethod}/edit', [PaymentSubmethodController::class, 'edit'])->name('edit');
             Route::put('/{paymentSubmethod}', [PaymentSubmethodController::class, 'update'])->name('update');
             Route::delete('/{paymentSubmethod}', [PaymentSubmethodController::class, 'destroy'])->name('destroy');
+        });
+
+        // Complementary Product Categories
+        Route::prefix('complementary-product-categories')->name('complementary-product-categories.')->group(function () {
+            Route::get('/', [ComplementaryProductCategoryController::class, 'index'])->name('index');
+            Route::post('/store', [ComplementaryProductCategoryController::class, 'store'])->name('store');
+            Route::put('/update/{category}', [ComplementaryProductCategoryController::class, 'update'])->name('update');
+            Route::delete('/delete/{category}', [ComplementaryProductCategoryController::class, 'destroy'])->name('destroy');
+        });
+
+        // Complementary Products
+        Route::prefix('complementary-products')->name('complementary-products.')->group(function () {
+            Route::get('/{category_id}', [ComplementaryProductController::class, 'index'])->name('index');
+            Route::post('/store', [ComplementaryProductController::class, 'store'])->name('store');
+            Route::put('/update/{product}', [ComplementaryProductController::class, 'update'])->name('update');
+            Route::delete('/delete/{product}', [ComplementaryProductController::class, 'destroy'])->name('destroy');
         });
 
         //POS

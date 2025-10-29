@@ -65,6 +65,11 @@
                 <i class="fa-solid fa-tags me-2"></i> Lista de Servicios
             </a>
         </li>
+        <li>
+            <a href="{{ route('admin.complementary-product-categories.index') }}" class="nav-link {{ request()->routeIs('admin.complementary-product-categories.index') ? 'active' : '' }}">
+                <i class="fa-solid fa-dumpster-fire"></i> P. Complementarios
+            </a>
+        </li>
 
         <!-- Gastos -->
         <li class="section-title mt-3">Gastos</li>

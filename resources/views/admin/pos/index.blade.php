@@ -1,196 +1,312 @@
-{{-- resources/views/admin/pos/index.blade.php --}}
-@extends('adminlte::page')
+@extends('admin.layouts.app')
 
 @section('title', 'Punto de Venta')
 
 @section('content_header')
-    <h1 class="text-primary fw-bold">
-        <i class="fas fa-cash-register"></i> Punto de Venta (P.O.S)
-    </h1>
+<h1 class="text-primary fw-bold mb-0">
+    <i class="fas fa-cash-register"></i> Punto de Venta (P.O.S)
+</h1>
 @stop
 
 @section('content')
-<div class="container mt-4">
+<div class="container-fluid mt-4">
+    <div class="row">
+        {{-- PANEL IZQUIERDO - Categorías y Productos --}}
+        <div class="col-md-7">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    {{-- Buscador --}}
+                    <input type="text" id="buscar_producto" class="form-control mb-4" placeholder="Busca aquí">
 
-    {{-- 🔹 Buscador de Orden --}}
-    <div class="card shadow-sm border-0 mb-4">
-        <div class="card-body">
-            <div class="row align-items-center">
-                <div class="col-md-8">
-                    <label for="order_number" class="form-label fw-semibold">Número de Orden</label>
-                    <input type="text" id="order_number" class="form-control form-control-lg" placeholder="Ejemplo: ORD-ABC123">
+                    <div id="contenedor_pos">
+                        {{-- Vista de Categorías --}}
+                        <div id="vista_categorias">
+                            <div class="row g-3" id="lista_categorias">
+                                @foreach($categorias as $categoria)
+                                <div class="col-md-3 col-sm-6">
+                                    <div class="card text-center categoria-card h-100" data-id="{{ $categoria->id }}">
+                                        <div class="card-body d-flex flex-column justify-content-center align-items-center">
+                                            @if($categoria->image && file_exists(public_path($categoria->image)))
+                                                <img src="{{ asset($categoria->image) }}" 
+                                                    alt="{{ $categoria->name }}" 
+                                                    class="img-fluid rounded mb-2" 
+                                                    style="width: 100px; height: 100px; object-fit: cover;">
+                                            @else
+                                                <img src="{{ asset('images/default_category.png') }}" 
+                                                    alt="Sin imagen" 
+                                                    class="img-fluid rounded mb-2" 
+                                                    style="width: 100px; height: 100px; object-fit: cover;">
+                                            @endif
+                                            <h6 class="fw-semibold mt-2">{{ $categoria->name }}</h6>
+                                        </div>
+                                    </div>
+                                </div>
+                                @endforeach
+                            </div>
+                        </div>
+
+                        {{-- Vista de Productos --}}
+                        <div id="vista_productos" class="d-none">
+                            <button class="btn btn-outline-secondary mb-3" id="btnVolverCategorias">
+                                <i class="fas fa-arrow-left"></i> Volver
+                            </button>
+
+                            <div class="row g-3" id="productos_categoria">
+                                @foreach($categoria->products as $producto)
+                                <div class="col-md-3 col-sm-6">
+                                    <div class="card text-center service-card h-100" data-id="{{ $producto->id }}">
+                                        <div class="card-body d-flex flex-column justify-content-center align-items-center">
+                                            @if($producto->image && file_exists(public_path($producto->image)))
+                                                <img src="{{ asset($producto->image) }}" 
+                                                    alt="{{ $producto->name }}" 
+                                                    class="img-fluid rounded mb-2" 
+                                                    style="width: 100px; height: 100px; object-fit: cover;">
+                                            @else
+                                                <img src="{{ asset('images/default_product.png') }}" 
+                                                    alt="Sin imagen" 
+                                                    class="img-fluid rounded mb-2" 
+                                                    style="width: 100px; height: 100px; object-fit: cover;">
+                                            @endif
+                                            <h6 class="fw-semibold mt-2">{{ $producto->name }}</h6>
+                                            <small class="text-muted">S/ {{ number_format($producto->price, 2) }}</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="col-md-4 text-center mt-3 mt-md-0">
-                    <button id="btnBuscar" class="btn btn-primary btn-lg w-100">
-                        <i class="fas fa-search"></i> Buscar
-                    </button>
+            </div>
+        </div>
+
+        {{-- PANEL DERECHO - Carrito --}}
+        <div class="col-md-5">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <select class="form-select me-2" id="cliente_id">
+                            <option value="">Seleccione un cliente</option>
+                            @foreach($clientes as $cliente)
+                                <option value="{{ $cliente->id }}">{{ $cliente->nombre }}</option>
+                            @endforeach
+                        </select>
+                        <button class="btn btn-primary" id="btnAgregarCliente">
+                            <i class="fas fa-plus"></i> Agregar
+                        </button>
+                    </div>
+
+                    <div class="d-flex mb-3">
+                        <input type="text" id="numero_orden" class="form-control me-2" value="ORD-0001" readonly>
+                        <input type="date" id="fecha_orden" class="form-control" value="{{ date('Y-m-d') }}">
+                    </div>
+
+                    {{-- Tabla carrito --}}
+                    <div class="table-responsive">
+                        <table class="table align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>PRODUCTO</th>
+                                    <th>CANTIDAD</th>
+                                    <th>PRECIO</th>
+                                    <th>SUBTOTAL</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla_carrito"></tbody>
+                        </table>
+                    </div>
+
+                    {{-- Total --}}
+                    <div class="d-flex justify-content-between align-items-center border-top pt-3">
+                        <span class="fw-bold text-secondary">Bruto total</span>
+                        <span class="fw-bold text-success fs-5" id="bruto_total">S/ 0.00</span>
+                    </div>
+
+                    {{-- Botones --}}
+                    <div class="d-flex justify-content-end mt-4">
+                        <button class="btn btn-danger me-2" id="btnLimpiar">
+                            <i class="fas fa-trash-alt"></i> Limpiar todo
+                        </button>
+                        <button class="btn btn-primary" id="btnGuardar">
+                            <i class="fas fa-save"></i> Guardar Continuar
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-
-    {{-- 🔹 Sección de Resultados --}}
-    <div id="resultado" class="d-none">
-        {{-- Información del Cliente --}}
-        <div class="card mb-4 shadow-sm">
-            <div class="card-header bg-primary text-white fw-bold">
-                <i class="fas fa-user"></i> Información del Cliente
-            </div>
-            <div class="card-body">
-                <p><strong>Nombre:</strong> <span id="cliente_nombre"></span></p>
-                <p><strong>Teléfono:</strong> <span id="cliente_telefono"></span></p>
-                <p><strong>Dirección:</strong> <span id="cliente_direccion"></span></p>
-            </div>
-        </div>
-
-        {{-- Servicios --}}
-        <div class="card mb-4 shadow-sm">
-            <div class="card-header bg-info text-white fw-bold">
-                <i class="fas fa-tshirt"></i> Servicios Solicitados
-            </div>
-            <div class="card-body table-responsive">
-                <table class="table table-bordered table-striped align-middle" id="tabla_servicios">
-                    <thead class="table-primary">
-                        <tr>
-                            <th>Servicio</th>
-                            <th>Cantidad</th>
-                            <th>Precio Unitario</th>
-                            <th>Subtotal</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                    <tfoot>
-                        <tr>
-                            <th colspan="3" class="text-end">Subtotal</th>
-                            <th id="subtotal"></th>
-                        </tr>
-                        <tr>
-                            <th colspan="3" class="text-end">Descuento</th>
-                            <th id="descuento"></th>
-                        </tr>
-                        <tr>
-                            <th colspan="3" class="text-end">Impuesto</th>
-                            <th id="impuesto"></th>
-                        </tr>
-                        <tr class="table-success">
-                            <th colspan="3" class="text-end">Total Final</th>
-                            <th id="total_final"></th>
-                        </tr>
-                    </tfoot>
-                </table>
-            </div>
-        </div>
-
-        {{-- Pago --}}
-        <div class="card shadow-sm">
-            <div class="card-header bg-secondary text-white fw-bold">
-                <i class="fas fa-credit-card"></i> Información de Pago
-            </div>
-            <div class="card-body">
-                <p><strong>Método de Pago:</strong> <span id="metodo_pago"></span></p>
-                <p><strong>Submétodo:</strong> <span id="submetodo_pago"></span></p>
-                <p><strong>Monto Pagado:</strong> <span id="monto_pagado"></span></p>
-                <p><strong>Vuelto:</strong> <span id="vuelto"></span></p>
-                <p><strong>Estado:</strong>
-                    <span id="estado_pago" class="badge fs-6"></span>
-                </p>
-
-                <button id="btnRegistrarPago" class="btn btn-success btn-lg mt-3">
-                    <i class="fas fa-money-bill-wave"></i> Registrar Pago
-                </button>
-            </div>
-        </div>
-    </div>
-
-    {{-- Alerta si no se encuentra --}}
-    <div id="sin_resultado" class="alert alert-warning text-center d-none mt-4">
-        <i class="fas fa-exclamation-triangle"></i> No se encontró la orden especificada.
-    </div>
-
 </div>
-@stop
 
-@section('js')
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const btnBuscar = document.getElementById('btnBuscar');
-    const inputOrden = document.getElementById('order_number');
-    const resultado = document.getElementById('resultado');
-    const sinResultado = document.getElementById('sin_resultado');
-
-    btnBuscar.addEventListener('click', buscarOrden);
-
-    function buscarOrden() {
-        const orderNumber = inputOrden.value.trim();
-        if (!orderNumber) {
-            alert('Por favor, ingresa un número de orden.');
-            return;
-        }
-
-        fetch(`/admin/orders/${orderNumber}/details`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    mostrarDatos(data.order);
-                } else {
-                    resultado.classList.add('d-none');
-                    sinResultado.classList.remove('d-none');
-                }
-            })
-            .catch(err => {
-                console.error(err);
-                resultado.classList.add('d-none');
-                sinResultado.classList.remove('d-none');
-            });
+{{-- Estilos personalizados --}}
+<style>
+    .categoria-card, .producto-card {
+        border: 1px dashed #d0d0d0;
+        border-radius: 12px;
+        transition: all 0.2s ease-in-out;
+        cursor: pointer;
     }
 
-    function mostrarDatos(order) {
-        resultado.classList.remove('d-none');
-        sinResultado.classList.add('d-none');
+    .categoria-card:hover, .producto-card:hover {
+        background-color: #f0f8ff;
+        border-color: #0d6efd;
+        transform: translateY(-3px);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
 
-        // Cliente
-        document.getElementById('cliente_nombre').textContent = order.customer.full_name;
-        document.getElementById('cliente_telefono').textContent = order.customer.phone ?? '-';
-        document.getElementById('cliente_direccion').textContent = order.customer.address ?? '-';
+    #lista_categorias, #productos_categoria {
+        max-height: 400px;
+        overflow-y: auto;
+        padding-right: 8px;
+    }
+</style>
+@stop
 
-        // Servicios
-        const tbody = document.querySelector('#tabla_servicios tbody');
-        tbody.innerHTML = '';
-        order.items.forEach(item => {
-            const row = `
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const tabla = document.getElementById('tabla_carrito');
+    const totalBruto = document.getElementById('bruto_total');
+    const btnLimpiar = document.getElementById('btnLimpiar');
+    const btnGuardar = document.getElementById('btnGuardar');
+
+    const vistaCategorias = document.getElementById('vista_categorias');
+    const vistaProductos = document.getElementById('vista_productos');
+    const productosContainer = document.getElementById('productos_categoria');
+    const btnVolverCategorias = document.getElementById('btnVolverCategorias');
+
+    const categorias = @json($categorias);
+    let carrito = [];
+
+    // --- Mostrar productos al hacer clic en una categoría ---
+    document.querySelectorAll('.categoria-card').forEach(card => {
+        card.addEventListener('click', () => {
+            const categoriaId = card.dataset.id;
+            const categoria = categorias.find(c => c.id == categoriaId);
+
+            productosContainer.innerHTML = '';
+
+            if (categoria && categoria.products.length > 0) {
+                categoria.products.forEach(prod => {
+                    productosContainer.insertAdjacentHTML('beforeend', `
+                        <div class="col-md-3 col-sm-6">
+                            <div class="card text-center producto-card h-100" 
+                                data-id="${prod.id}" 
+                                data-nombre="${prod.name}" 
+                                data-precio="${prod.price}">
+                                <div class="card-body d-flex flex-column justify-content-center align-items-center">
+                                    <img src="${prod.image ? `/${prod.image}` : '/images/default_product.png'}" 
+                                        alt="${prod.name}" 
+                                        class="img-fluid rounded mb-2" 
+                                        style="width: 100px; height: 100px; object-fit: cover;">
+                                    <h6 class="fw-semibold mt-2">${prod.name}</h6>
+                                    <small class="text-muted">S/ ${parseFloat(prod.price).toFixed(2)}</small>
+                                </div>
+                            </div>
+                        </div>
+                    `);
+                });
+            } else {
+                productosContainer.innerHTML = `<div class="text-center text-muted">No hay productos en esta categoría.</div>`;
+            }
+
+            vistaCategorias.classList.add('d-none');
+            vistaProductos.classList.remove('d-none');
+            agregarEventosProductos();
+        });
+    });
+
+    // --- Volver a categorías ---
+    btnVolverCategorias.addEventListener('click', () => {
+        vistaProductos.classList.add('d-none');
+        vistaCategorias.classList.remove('d-none');
+    });
+
+    // --- Agregar productos al carrito ---
+    function agregarEventosProductos() {
+        document.querySelectorAll('.producto-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const id = card.dataset.id;
+                const nombre = card.dataset.nombre;
+                const precio = parseFloat(card.dataset.precio);
+
+                const existente = carrito.find(item => item.id === id);
+                if (existente) {
+                    existente.cantidad++;
+                } else {
+                    carrito.push({ id, nombre, cantidad: 1, precio });
+                }
+                renderCarrito();
+            });
+        });
+    }
+
+    // --- Render del carrito ---
+    function renderCarrito() {
+        tabla.innerHTML = '';
+        let total = 0;
+        carrito.forEach(item => {
+            const subtotal = item.cantidad * item.precio;
+            total += subtotal;
+
+            tabla.insertAdjacentHTML('beforeend', `
                 <tr>
-                    <td>${item.service.name}</td>
-                    <td>${item.quantity}</td>
-                    <td>S/ ${item.unit_price.toFixed(2)}</td>
-                    <td>S/ ${(item.quantity * item.unit_price).toFixed(2)}</td>
+                    <td>${item.nombre}</td>
+                    <td><input type="number" class="form-control form-control-sm cantidad" data-id="${item.id}" value="${item.cantidad}" min="1" style="width: 70px;"></td>
+                    <td>S/ ${item.precio.toFixed(2)}</td>
+                    <td>S/ ${subtotal.toFixed(2)}</td>
+                    <td><button class="btn btn-sm btn-danger eliminar" data-id="${item.id}"><i class="fas fa-times"></i></button></td>
                 </tr>
-            `;
-            tbody.insertAdjacentHTML('beforeend', row);
+            `);
+        });
+        totalBruto.textContent = `S/ ${total.toFixed(2)}`;
+        agregarEventosCarrito();
+    }
+
+    // --- Eventos del carrito ---
+    function agregarEventosCarrito() {
+        document.querySelectorAll('.eliminar').forEach(btn => {
+            btn.addEventListener('click', e => {
+                const id = e.target.closest('button').dataset.id;
+                carrito = carrito.filter(item => item.id !== id);
+                renderCarrito();
+            });
         });
 
-        document.getElementById('subtotal').textContent = `S/ ${order.total_amount.toFixed(2)}`;
-        document.getElementById('descuento').textContent = `S/ ${order.discount.toFixed(2)}`;
-        document.getElementById('impuesto').textContent = `S/ ${order.tax.toFixed(2)}`;
-        document.getElementById('total_final').textContent = `S/ ${order.final_total.toFixed(2)}`;
-
-        // Pago
-        document.getElementById('metodo_pago').textContent = order.payment_method?.name ?? '-';
-        document.getElementById('submetodo_pago').textContent = order.payment_submethod?.name ?? '-';
-        document.getElementById('monto_pagado').textContent = `S/ ${(order.payment_amount ?? 0).toFixed(2)}`;
-        document.getElementById('vuelto').textContent = `S/ ${(order.payment_returned ?? 0).toFixed(2)}`;
-
-        const estado = document.getElementById('estado_pago');
-        estado.textContent = order.payment_status.toUpperCase();
-
-        estado.className = 'badge fs-6';
-        if (order.payment_status === 'paid') {
-            estado.classList.add('bg-success');
-        } else if (order.payment_status === 'partial') {
-            estado.classList.add('bg-warning', 'text-dark');
-        } else {
-            estado.classList.add('bg-danger');
-        }
+        document.querySelectorAll('.cantidad').forEach(input => {
+            input.addEventListener('change', e => {
+                const id = e.target.dataset.id;
+                const nuevoValor = parseInt(e.target.value);
+                carrito = carrito.map(item => item.id === id ? { ...item, cantidad: nuevoValor } : item);
+                renderCarrito();
+            });
+        });
     }
+
+    // --- Limpiar carrito ---
+    btnLimpiar.addEventListener('click', () => {
+        Swal.fire({
+            title: '¿Vaciar carrito?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, limpiar',
+            cancelButtonText: 'Cancelar'
+        }).then(res => {
+            if (res.isConfirmed) {
+                carrito = [];
+                renderCarrito();
+            }
+        });
+    });
+
+    // --- Guardar pedido ---
+    btnGuardar.addEventListener('click', () => {
+        if (carrito.length === 0) {
+            Swal.fire('Atención', 'Debe agregar al menos un producto.', 'info');
+            return;
+        }
+        Swal.fire('Guardado', 'El pedido fue registrado con éxito.', 'success');
+    });
 });
 </script>
-@stop
+@endpush

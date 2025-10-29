@@ -451,29 +451,42 @@ document.addEventListener('DOMContentLoaded', function() {
                     body: formData
                 });
 
-                const data = await response.json();
+                // Manejar si el backend no responde con JSON válido
+                let data;
+                try {
+                    data = await response.json();
+                } catch (err) {
+                    throw new Error('Respuesta no válida del servidor');
+                }
 
                 if (data.success) {
-                    // abre el ticket en nueva pestaña
-                    window.open(data.ticket_url, '_blank');
+                    // Abrir el ticket en nueva pestaña
+                    const ticketWindow = window.open(data.ticket_url, '_blank');
 
-                    // cerrar el modal y mostrar mensaje
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('confirmOrderModal'));
-                    modal.hide();
+                    // Cerrar modal si existe
+                    const modalElement = document.getElementById('confirmOrderModal');
+                    if (modalElement) {
+                        const modal = bootstrap.Modal.getInstance(modalElement);
+                        if (modal) modal.hide();
+                    }
 
-                    // notificación visual
+                    // Mostrar notificación visual
                     Swal.fire({
                         icon: 'success',
                         title: '¡Orden creada!',
                         text: data.message,
-                        timer: 1500,
+                        timer: 1000,
                         showConfirmButton: false
                     });
 
-                    // recargar lista o redirigir
+                    // Redirigir al index después del mensaje
                     setTimeout(() => {
-                        window.location.href = "{{ route('admin.orders.index') }}";
-                    }, 1600);
+                        if (ticketWindow) {
+                            ticketWindow.focus();
+                        }
+                        console.log('Redirigiendo a:', data.redirect_url);
+                        window.location.replace(data.redirect_url);
+                    }, 1200);
                 } else {
                     Swal.fire({
                         icon: 'error',
@@ -481,6 +494,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         text: data.message || 'No se pudo crear la orden.'
                     });
                 }
+
             } catch (error) {
                 console.error(error);
                 Swal.fire({

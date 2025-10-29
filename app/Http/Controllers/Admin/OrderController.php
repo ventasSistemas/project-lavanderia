@@ -148,12 +148,16 @@ class OrderController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Orden creada exitosamente.',
-                'ticket_url' => route('admin.orders.ticket', $order->id)
+                'ticket_url' => route('admin.orders.ticket', $order->id),
+                'redirect_url' => route('admin.orders.index')
             ]);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('error', 'Error al crear la orden: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al crear la orden: ' . $e->getMessage(),
+            ]);
         }
     }
 

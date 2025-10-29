@@ -5,7 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use Illuminate\Http\Request;
-use PDF; // usaremos DomPDF
+use Barryvdh\DomPDF\Facade\Pdf;
+//use PDF; 
 
 class TicketController extends Controller
 {
@@ -13,7 +14,7 @@ class TicketController extends Controller
     {
         $order = Order::with(['customer', 'branch', 'items.service'])->findOrFail($id);
 
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('admin.orders.ticket', compact('order'));
+        $pdf = Pdf::loadView('admin.orders.ticket', compact('order'));
         return $pdf->stream("Ticket_{$order->order_number}.pdf");
     }
 }
