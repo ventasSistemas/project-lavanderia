@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             //ServiceComboSeeder::class,
             OrderStatusSeeder::class,
             PaymentMethodSeeder::class,
+            ComplementarySeeder::class,
         ]);
     }
 }

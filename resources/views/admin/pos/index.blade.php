@@ -84,16 +84,14 @@
         <div class="col-md-5">
             <div class="card shadow-sm border-0">
                 <div class="card-body">
-                    <div class="d-flex align-items-center mb-3">
-                        <select class="form-select me-2" id="cliente_id">
-                            <option value="">Seleccione un cliente</option>
-                            @foreach($clientes as $cliente)
-                                <option value="{{ $cliente->id }}">{{ $cliente->nombre }}</option>
-                            @endforeach
-                        </select>
-                        <button class="btn btn-primary" id="btnAgregarCliente">
-                            <i class="fas fa-plus"></i> Agregar
-                        </button>
+                    <div class="mb-3 position-relative">
+                        <input type="text" id="buscar_cliente" class="form-control" placeholder="Buscar por número de orden o nombre de cliente">
+
+                        {{-- Resultados dinámicos --}}
+                        <ul id="resultados_busqueda" 
+                            class="list-group position-absolute w-100 shadow-sm" 
+                            style="top: 40px; z-index: 1050; display:none; max-height:220px; overflow-y:auto;">
+                        </ul>
                     </div>
 
                     <div class="d-flex mb-3">
@@ -164,6 +162,112 @@
 
 @push('scripts')
 <script>
+/*Buscador de cliente y número de orden*/
+document.addEventListener("DOMContentLoaded", function () {
+    const inputBuscar = document.getElementById("buscar_cliente");
+    const listaResultados = document.getElementById("resultados_busqueda");
+
+    let timeout = null;
+
+    inputBuscar.addEventListener("input", function () {
+        const query = this.value.trim();
+
+        clearTimeout(timeout);
+
+        if (query.length < 2) {
+            listaResultados.style.display = "none";
+            return;
+        }
+
+        timeout = setTimeout(() => {
+            fetch(`/admin/pos/buscar-cliente?q=${encodeURIComponent(query)}`)
+                .then(res => res.json())
+                .then(data => {
+                    listaResultados.innerHTML = "";
+
+                    if (data.length === 0) {
+                        listaResultados.style.display = "none";
+                        return;
+                    }
+
+                    data.forEach(item => {
+                        const li = document.createElement("li");
+                        li.classList.add("list-group-item", "list-group-item-action");
+                        li.innerHTML = `
+                            <div>
+                                <strong>${item.full_name}</strong><br>
+                                <small class="text-muted">
+                                    ${item.orders.length > 0 ? 'Órdenes: ' + item.orders.join(', ') : 'Sin órdenes'}
+                                </small>
+                            </div>
+                        `;
+
+                        // Acción al hacer clic en el cliente encontrado
+                        li.addEventListener("click", () => {
+                            inputBuscar.value = item.full_name;
+                            listaResultados.style.display = "none";
+
+                            console.log("🟢 Cliente seleccionado:", item);
+                            // Aquí puedes disparar otra acción, por ejemplo:
+                            // cargarOrden(item.orders[0]); o setClienteId(item.id);
+                        });
+
+                        listaResultados.appendChild(li);
+                    });
+
+                    listaResultados.style.display = "block";
+                })
+                .catch(err => console.error("❌ Error al buscar cliente:", err));
+        }, 400);
+    });
+
+    // Ocultar lista al hacer clic fuera
+    document.addEventListener("click", function (e) {
+        if (!listaResultados.contains(e.target) && e.target !== inputBuscar) {
+            listaResultados.style.display = "none";
+        }
+    });
+});
+
+
+/*Buscar Categoria*/
+document.addEventListener("DOMContentLoaded", () => {
+    const inputBuscar = document.getElementById("buscar_producto");
+    const listaCategorias = document.getElementById("lista_categorias");
+    const categorias = listaCategorias.querySelectorAll(".categoria-card");
+
+    // Crear mensaje vacío (inicialmente oculto)
+    const mensajeNoEncontrado = document.createElement("div");
+    mensajeNoEncontrado.id = "mensaje_no_encontrado";
+    mensajeNoEncontrado.className = "text-center text-muted mt-3 fw-semibold";
+    mensajeNoEncontrado.style.display = "none";
+    mensajeNoEncontrado.textContent = "😕 No se encontraron categorías con ese nombre.";
+    listaCategorias.parentElement.appendChild(mensajeNoEncontrado);
+
+    inputBuscar.addEventListener("input", () => {
+        const texto = inputBuscar.value.trim().toLowerCase();
+        let coincidencias = 0;
+
+        if (texto === "") {
+            // Mostrar todas si no hay texto
+            categorias.forEach(cat => cat.closest(".col-md-3").classList.remove("d-none"));
+            mensajeNoEncontrado.style.display = "none";
+            return;
+        }
+
+        categorias.forEach(cat => {
+            const nombre = cat.querySelector("h6").textContent.toLowerCase();
+            const mostrar = nombre.includes(texto);
+            cat.closest(".col-md-3").classList.toggle("d-none", !mostrar);
+            if (mostrar) coincidencias++;
+        });
+
+        // Mostrar mensaje si no hay coincidencias
+        mensajeNoEncontrado.style.display = coincidencias === 0 ? "block" : "none";
+    });
+});
+
+
 document.addEventListener('DOMContentLoaded', function () {
     const tabla = document.getElementById('tabla_carrito');
     const totalBruto = document.getElementById('bruto_total');

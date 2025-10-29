@@ -170,6 +170,7 @@ Route::middleware('auth')->group(function () {
         Route::prefix('pos')->name('pos.')->group(function () {
             Route::get('/', [PosController::class, 'index'])->name('index');
             Route::get('/{orderNumber}/details', [PosController::class, 'findByNumber'])->name('findByNumber');
+            Route::get('/buscar-cliente', [PosController::class, 'buscarCliente'])->name('buscarCliente');
         });
     });
 

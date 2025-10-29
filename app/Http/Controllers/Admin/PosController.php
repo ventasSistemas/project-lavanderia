@@ -38,4 +38,28 @@ class PosController extends Controller
             'order' => $order
         ]);
     }
+
+    public function buscarCliente(Request $request)
+    {
+        $search = $request->input('q');
+
+        $clientes = Customer::where('full_name', 'like', "%{$search}%")
+            ->orWhereHas('orders', function ($q) use ($search) {
+                $q->where('order_number', 'like', "%{$search}%");
+            })
+            ->with(['orders:id,order_number,customer_id'])
+            ->take(10)
+            ->get(['id', 'full_name']);
+
+        $resultado = $clientes->map(function ($cliente) {
+            return [
+                'id' => $cliente->id,
+                'full_name' => $cliente->full_name,
+                'orders' => $cliente->orders->pluck('order_number'),
+            ];
+        });
+
+        return response()->json($resultado);
+    }
+
 }
