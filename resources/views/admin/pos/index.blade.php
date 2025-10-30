@@ -2,21 +2,26 @@
 
 @section('title', 'Punto de Venta')
 
-@section('content_header')
-<h1 class="text-primary fw-bold mb-0">
-    <i class="fas fa-cash-register"></i> Punto de Venta (P.O.S)
-</h1>
-@stop
-
 @section('content')
-<div class="container-fluid mt-4">
+<div class="container-fluid py-4">
+    <!-- Encabezado -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="fw-semibold text-dark mb-1">
+                <i class="fas fa-cash-register text-danger"></i> Punto de Venta (P.O.S)
+            </h4>
+            <p class="text-muted small mb-0">Gestiona tus ventas en tiempo real: selecciona servicios, registra pagos y genera órdenes del negocio con facilidad.</p>
+        </div>
+    </div>
+
+    {{-- Encabezado de página --}}
     <div class="row">
         {{-- PANEL IZQUIERDO - Categorías y Productos --}}
         <div class="col-md-7">
             <div class="card shadow-sm border-0">
                 <div class="card-body">
                     {{-- Buscador --}}
-                    <input type="text" id="buscar_producto" class="form-control mb-4" placeholder="Busca aquí">
+                    <input type="text" id="buscar_producto" class="form-control mb-4" placeholder="Buscar categoria...">
 
                     <div id="contenedor_pos">
                         {{-- Vista de Categorías --}}
@@ -85,7 +90,7 @@
             <div class="card shadow-sm border-0">
                 <div class="card-body">
                     <div class="mb-3 position-relative">
-                        <input type="text" id="buscar_cliente" class="form-control" placeholder="Buscar por número de orden o nombre de cliente">
+                        <input type="text" id="buscar_cliente" class="form-control" placeholder="Ingrese el número de orden del servicio...">
 
                         {{-- Resultados dinámicos --}}
                         <ul id="resultados_busqueda" 
@@ -95,7 +100,7 @@
                     </div>
 
                     <div class="d-flex mb-3">
-                        <input type="text" id="numero_orden" class="form-control me-2" value="ORD-0001" readonly>
+                        <input type="text" id="numero_orden" class="form-control me-2" readonly>
                         <input type="date" id="fecha_orden" class="form-control" value="{{ date('Y-m-d') }}">
                     </div>
 
@@ -136,99 +141,131 @@
     </div>
 </div>
 
-{{-- Estilos personalizados --}}
+<!-- Modal Confirmar Venta (Diseño Moderno sin Tabla) -->
+<div class="modal fade" id="modalConfirmarVenta" tabindex="-1" aria-labelledby="modalConfirmarVentaLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-altura-custom">
+    <div class="modal-content border-0 shadow-lg rounded-4">
+      
+      <!-- Encabezado -->
+      <div class="modal-header bg-gradient bg-primary text-white rounded-top-4">
+        <h5 class="modal-title fw-bold" id="modalConfirmarVentaLabel">
+          <i class="fas fa-receipt me-2"></i> Resumen de la Venta
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+
+      <!-- Cuerpo -->
+      <div class="modal-body p-4">
+        <!-- Información de la Orden -->
+        <div class="mb-4">
+          <div class="d-flex justify-content-between flex-wrap">
+            <div>
+              <h6 class="text-muted mb-1">Número de Orden</h6>
+              <p class="fw-semibold text-dark mb-0" id="numeroOrdenModal">ORD-0000</p>
+            </div>
+            <div>
+              <h6 class="text-muted mb-1">Fecha de Registro</h6>
+              <p class="fw-semibold text-dark mb-0" id="fechaOrdenModal">{{ date('Y-m-d') }}</p>
+            </div>
+          </div>
+          <hr class="my-3">
+        </div>
+
+        <!-- Lista de Productos -->
+        <div id="lista_detalles_modal" class="px-2">
+          <!-- Aquí se agregan los productos dinámicamente -->
+        </div>
+
+        <!-- Total -->
+        <!-- Sección de Totales Detallados -->
+        <div class="mt-3">
+            <div class="d-flex justify-content-between">
+                <span>Subtotal:</span>
+                <span id="subtotal_modal">S/ 0.00</span>
+            </div>
+            <div class="d-flex justify-content-between">
+                <span>Descuento:</span>
+                <span id="descuento_modal">S/ 0.00</span>
+            </div>
+            <div class="d-flex justify-content-between">
+                <span>Impuesto:</span>
+                <span id="impuesto_modal">S/ 0.00</span>
+            </div>
+            <div class="d-flex justify-content-between fw-bold border-top mt-2 pt-2">
+                <span>Total:</span>
+                <span id="total_modal">S/ 0.00</span>
+            </div>
+            <hr>
+            <!-- Selección de método de pago -->
+            <div class="mt-3">
+            <label class="fw-semibold">Método de pago:</label>
+            <select id="metodoPagoSelect" class="form-select">
+                <option value="">Seleccione un método</option>
+            </select>
+            </div>
+
+            <!-- Submétodo -->
+            <div class="mt-3">
+            <label class="fw-semibold">Submétodo:</label>
+            <select id="submetodoPagoSelect" class="form-select">
+                <option value="">Seleccione un submétodo</option>
+            </select>
+            </div>
+
+            <!-- Monto recibido -->
+            <div class="mt-3">
+            <label class="fw-semibold">Monto recibido:</label>
+            <input type="number" id="montoRecibidoInput" class="form-control" min="0" step="0.01" placeholder="Ingrese monto recibido">
+            </div>
+
+            <!-- Vuelto dinámico -->
+            <div class="d-flex justify-content-between mt-2">
+            <span>Vuelto:</span>
+            <span id="vuelto_modal" class="fw-bold text-success">S/ 0.00</span>
+            </div>
+
+            <!--
+            <div class="d-flex justify-content-between">
+                <span>Submétodo:</span>
+                <span id="submetodo_pago_modal">---</span>
+            </div>-->
+        </div>
+      </div>
+
+      <!-- Pie -->
+      <div class="modal-footer bg-light rounded-bottom-4">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+          <i class="fas fa-arrow-left"></i> Volver
+        </button>
+        <button type="button" class="btn btn-success" id="btnConfirmarVentaFinal">
+          <i class="fas fa-check-circle"></i> Confirmar y Registrar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <style>
-    .categoria-card, .producto-card {
-        border: 1px dashed #d0d0d0;
-        border-radius: 12px;
-        transition: all 0.2s ease-in-out;
-        cursor: pointer;
-    }
+.modal-altura-custom {
+    max-width: 600px; 
+    height: 90vh;   
+}
 
-    .categoria-card:hover, .producto-card:hover {
-        background-color: #f0f8ff;
-        border-color: #0d6efd;
-        transform: translateY(-3px);
-        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    }
+.modal-altura-custom .modal-content {
+  height: 100%;
+}
 
-    #lista_categorias, #productos_categoria {
-        max-height: 400px;
-        overflow-y: auto;
-        padding-right: 8px;
-    }
 </style>
-@stop
+
+
+@endsection
+
 
 @push('scripts')
 <script>
-/*Buscador de cliente y número de orden*/
-document.addEventListener("DOMContentLoaded", function () {
-    const inputBuscar = document.getElementById("buscar_cliente");
-    const listaResultados = document.getElementById("resultados_busqueda");
 
-    let timeout = null;
-
-    inputBuscar.addEventListener("input", function () {
-        const query = this.value.trim();
-
-        clearTimeout(timeout);
-
-        if (query.length < 2) {
-            listaResultados.style.display = "none";
-            return;
-        }
-
-        timeout = setTimeout(() => {
-            fetch(`/admin/pos/buscar-cliente?q=${encodeURIComponent(query)}`)
-                .then(res => res.json())
-                .then(data => {
-                    listaResultados.innerHTML = "";
-
-                    if (data.length === 0) {
-                        listaResultados.style.display = "none";
-                        return;
-                    }
-
-                    data.forEach(item => {
-                        const li = document.createElement("li");
-                        li.classList.add("list-group-item", "list-group-item-action");
-                        li.innerHTML = `
-                            <div>
-                                <strong>${item.full_name}</strong><br>
-                                <small class="text-muted">
-                                    ${item.orders.length > 0 ? 'Órdenes: ' + item.orders.join(', ') : 'Sin órdenes'}
-                                </small>
-                            </div>
-                        `;
-
-                        // Acción al hacer clic en el cliente encontrado
-                        li.addEventListener("click", () => {
-                            inputBuscar.value = item.full_name;
-                            listaResultados.style.display = "none";
-
-                            console.log("🟢 Cliente seleccionado:", item);
-                            // Aquí puedes disparar otra acción, por ejemplo:
-                            // cargarOrden(item.orders[0]); o setClienteId(item.id);
-                        });
-
-                        listaResultados.appendChild(li);
-                    });
-
-                    listaResultados.style.display = "block";
-                })
-                .catch(err => console.error("❌ Error al buscar cliente:", err));
-        }, 400);
-    });
-
-    // Ocultar lista al hacer clic fuera
-    document.addEventListener("click", function (e) {
-        if (!listaResultados.contains(e.target) && e.target !== inputBuscar) {
-            listaResultados.style.display = "none";
-        }
-    });
-});
-
+let carrito = [];
+let ordenSeleccionada = null;
 
 /*Buscar Categoria*/
 document.addEventListener("DOMContentLoaded", () => {
@@ -396,21 +433,193 @@ document.addEventListener('DOMContentLoaded', function () {
             confirmButtonText: 'Sí, limpiar',
             cancelButtonText: 'Cancelar'
         }).then(res => {
-            if (res.isConfirmed) {
+            if (res.message) {
+                modal.hide();
+                Swal.fire('Éxito', `${res.message}\nN° de Orden: ${res.order_number || ''}`, 'success');
+
+                // --- Reiniciar carrito ---
                 carrito = [];
                 renderCarrito();
+
+                // --- Obtener siguiente número de orden ---
+                fetch('/admin/pos/next-order-number')
+                    .then(r => r.json())
+                    .then(data => {
+                        document.getElementById('numero_orden').value = data.next_order_number;
+                        document.getElementById('numeroOrdenModal').textContent = data.next_order_number;
+                    });
+            } else {
+                Swal.fire('Error', res.error || 'No se pudo guardar la venta', 'error');
             }
         });
     });
 
-    // --- Guardar pedido ---
+    // --- Guardar y mostrar modal ---
     btnGuardar.addEventListener('click', () => {
         if (carrito.length === 0) {
-            Swal.fire('Atención', 'Debe agregar al menos un producto.', 'info');
+            Swal.fire('Carrito vacío', 'Agrega productos antes de continuar', 'warning');
             return;
         }
-        Swal.fire('Guardado', 'El pedido fue registrado con éxito.', 'success');
+
+        // Calcular totales
+        let subtotal = 0;
+        carrito.forEach(item => {
+            subtotal += item.cantidad * item.precio;
+        });
+
+        let descuento = 0; // puedes cambiar según tu lógica
+        let impuesto = 1; // ejemplo s/ 1
+        let total = subtotal - descuento + impuesto;
+        let montoRecibido = total; // temporal, lo puedes editar luego
+        let vuelto = montoRecibido - total;
+        let metodoPagoSeleccionadoNombre = "Efectivo"; // ejemplo temporal
+        let submetodoPagoSeleccionadoNombre = "N/A"; // ejemplo temporal
+
+        // Mostrar datos básicos en el modal
+        document.getElementById('numeroOrdenModal').textContent = document.getElementById('numero_orden').value;
+        document.getElementById('fechaOrdenModal').textContent = document.getElementById('fecha_orden').value;
+        document.getElementById('subtotal_modal').textContent = `S/ ${subtotal.toFixed(2)}`;
+        document.getElementById('descuento_modal').textContent = `S/ ${descuento.toFixed(2)}`;
+        document.getElementById('impuesto_modal').textContent = `S/ ${impuesto.toFixed(2)}`;
+        document.getElementById('total_modal').textContent = `S/ ${total.toFixed(2)}`;
+        document.getElementById('vuelto_modal').textContent = `S/ ${vuelto.toFixed(2)}`;
+        //document.getElementById('submetodo_pago_modal').textContent = submetodoPagoSeleccionadoNombre;
+
+        // Rellenar productos en el modal
+        const listaModal = document.getElementById('lista_detalles_modal');
+        listaModal.innerHTML = '';
+
+        carrito.forEach(item => {
+            const subtotalItem = item.cantidad * item.precio;
+
+            listaModal.insertAdjacentHTML('beforeend', `
+                <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+                    <div>
+                        <h6 class="fw-semibold mb-1 text-dark">${item.nombre}</h6>
+                        <small class="text-muted">Cantidad: ${item.cantidad} × S/ ${item.precio.toFixed(2)}</small>
+                    </div>
+                    <span class="fw-bold text-success">S/ ${subtotalItem.toFixed(2)}</span>
+                </div>
+            `);
+        });
+
+        // Mostrar modal
+        const modal = new bootstrap.Modal(document.getElementById('modalConfirmarVenta'));
+        modal.show();
+
+        // --- Confirmar venta ---
+        const btnConfirmar = document.getElementById('btnConfirmarVentaFinal');
+        btnConfirmar.onclick = () => {
+            const data = {
+                order_number: document.getElementById('numero_orden').value,
+                sale_date: document.getElementById('fecha_orden').value,
+                subtotal,
+                descuento,
+                impuesto,
+                total,
+                amount_received: parseFloat(document.getElementById('montoRecibidoInput').value) || 0,
+                change_given: parseFloat(document.getElementById('vuelto_modal').textContent.replace('S/', '')) || 0,
+                payment_method_id: document.getElementById('metodoPagoSelect').value || null,
+                payment_submethod_id: document.getElementById('submetodoPagoSelect').value || null,
+                items: carrito.map(item => ({
+                    id: item.id,
+                    cantidad: item.cantidad,
+                    precio: item.precio
+                }))
+            };
+
+
+            fetch('/admin/pos/sales', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(res => res.json())
+            .then(res => {
+                if (res.message) {
+                    modal.hide();
+                    Swal.fire({
+                        title: 'Éxito',
+                        text: res.message,
+                        icon: 'success',
+                        confirmButtonText: 'Aceptar'
+                    }).then(() => {
+                        // Refrescar la vista después de cerrar el mensaje
+                        location.reload();
+                    });
+
+                    carrito = [];
+                    renderCarrito();
+                } else {
+                    Swal.fire('Error', res.error || 'No se pudo guardar la venta', 'error');
+                }
+            })
+
+            .catch(err => {
+                Swal.fire('Error', 'Error de conexión con el servidor', 'error');
+                console.error(err);
+            });
+        };
     });
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    const metodoPagoSelect = document.getElementById('metodoPagoSelect');
+    const submetodoPagoSelect = document.getElementById('submetodoPagoSelect');
+    const montoRecibidoInput = document.getElementById('montoRecibidoInput');
+    const vueltoModal = document.getElementById('vuelto_modal');
+
+    let metodosPago = [];
+    let totalActual = 0;
+
+    // --- Cargar número de orden inicial ---
+    fetch('/admin/pos/next-order-number')
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById('numero_orden').value = data.next_order_number;
+            document.getElementById('numeroOrdenModal').textContent = data.next_order_number;
+        })
+        .catch(err => console.error('Error cargando número de orden:', err));
+
+
+    // --- Cargar métodos de pago al abrir el modal ---
+    fetch('/admin/pos/payment-methods')
+        .then(res => res.json())
+        .then(data => {
+            metodosPago = data;
+            metodoPagoSelect.innerHTML = `<option value="">Seleccione un método</option>`;
+            data.forEach(m => {
+                metodoPagoSelect.insertAdjacentHTML('beforeend', `<option value="${m.id}">${m.name}</option>`);
+            });
+        });
+
+    // --- Cargar submétodos según método seleccionado ---
+    metodoPagoSelect.addEventListener('change', e => {
+        const metodoSeleccionado = metodosPago.find(m => m.id == e.target.value);
+        submetodoPagoSelect.innerHTML = `<option value="">Seleccione un submétodo</option>`;
+        if (metodoSeleccionado && metodoSeleccionado.submethods.length > 0) {
+            metodoSeleccionado.submethods.forEach(s => {
+                submetodoPagoSelect.insertAdjacentHTML('beforeend', `<option value="${s.id}">${s.name}</option>`);
+            });
+        }
+    });
+
+    // --- Calcular vuelto en tiempo real ---
+    montoRecibidoInput.addEventListener('input', () => {
+        const recibido = parseFloat(montoRecibidoInput.value) || 0;
+        const vuelto = recibido - totalActual;
+        vueltoModal.textContent = `S/ ${vuelto.toFixed(2)}`;
+    });
+
+    // --- Capturar total actual del modal ---
+    const observer = new MutationObserver(() => {
+        const totalText = document.getElementById('total_modal').textContent.replace('S/', '').trim();
+        totalActual = parseFloat(totalText) || 0;
+    });
+    observer.observe(document.getElementById('total_modal'), { childList: true });
 });
 </script>
 @endpush

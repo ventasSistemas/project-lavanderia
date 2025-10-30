@@ -29,11 +29,12 @@
 
         <!-- Ordenes -->
         <li class="section-title mt-3">Órdenes</li>
+        <!--
         <li>
             <a href="{{ route('admin.order-status.index') }}" class="nav-link {{ request()->routeIs('admin.order-status.index') ? 'active' : '' }}">
                 <i class="fa-solid fa-layer-group me-2"></i> Estados
             </a>
-        </li>
+        </li>-->
         <li>
             <a href="{{ route('admin.payment-methods.index') }}" class="nav-link {{ request()->routeIs('admin.payment-methods.index') ? 'active' : '' }}">
                 <i class="fa-solid fa-credit-card me-2"></i>  Metodos de Pago
@@ -114,11 +115,12 @@
                 <i class="fa-solid fa-building me-2"></i> Sucursales
             </a>
         </li>
+        <!--
         <li>
             <a href="#" class="nav-link {{ request()->routeIs('admin.inventario') ? 'active' : '' }}">
                 <i class="fa-solid fa-boxes-stacked me-2"></i> Inventario
             </a>
-        </li>
+        </li>-->
 
         <!-- Cerrar sesión -->
         <hr class="text-white mt-4">

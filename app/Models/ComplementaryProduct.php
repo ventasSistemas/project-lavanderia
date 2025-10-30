@@ -21,4 +21,10 @@ class ComplementaryProduct extends Model
     {
         return $this->belongsTo(ComplementaryProductCategory::class, 'complementary_product_category_id');
     }
+
+    public function orderDetails()
+    {
+        return $this->hasMany(OrderDetail::class, 'complementary_product_id');
+    }
+
 }

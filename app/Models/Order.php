@@ -73,4 +73,9 @@ class Order extends Model
     {
         return $this->belongsTo(PaymentSubmethod::class, 'payment_submethod_id');
     }
+
+    public function details()
+    {
+        return $this->hasMany(OrderDetail::class);
+    }
 }

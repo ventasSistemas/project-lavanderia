@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 
+use App\Http\Controllers\Admin\SaleController;
 use App\Http\Controllers\Admin\ComplementaryProductCategoryController;
 use App\Http\Controllers\Admin\ComplementaryProductController;
 use App\Http\Controllers\Admin\PosController;
@@ -166,11 +167,17 @@ Route::middleware('auth')->group(function () {
             Route::delete('/delete/{product}', [ComplementaryProductController::class, 'destroy'])->name('destroy');
         });
 
-        //POS
+        // POS
         Route::prefix('pos')->name('pos.')->group(function () {
             Route::get('/', [PosController::class, 'index'])->name('index');
-            Route::get('/{orderNumber}/details', [PosController::class, 'findByNumber'])->name('findByNumber');
-            Route::get('/buscar-cliente', [PosController::class, 'buscarCliente'])->name('buscarCliente');
+            Route::get('/buscar-orden', [PosController::class, 'buscarOrden'])->name('buscarOrden');
+            // routes/web.php
+            Route::get('/payment-methods', [SaleController::class, 'index']);
+            Route::get('/next-order-number', [SaleController::class, 'nextOrderNumber']);
+            Route::post('/sales', [SaleController::class, 'store'])->name('sales.store');
+
+            //Route::get('/orden-detalle/{id}', [PosController::class, 'detalleOrden'])->name('ordenDetalle');
+            //Route::post('/guardar-orden', [PosController::class, 'guardarOrden'])->name('guardarOrden');
         });
     });
 
