@@ -170,11 +170,18 @@ Route::middleware('auth')->group(function () {
         // POS
         Route::prefix('pos')->name('pos.')->group(function () {
             Route::get('/', [PosController::class, 'index'])->name('index');
-            Route::get('/buscar-orden', [PosController::class, 'buscarOrden'])->name('buscarOrden');
-            // routes/web.php
             Route::get('/payment-methods', [SaleController::class, 'index']);
             Route::get('/next-order-number', [SaleController::class, 'nextOrderNumber']);
             Route::post('/sales', [SaleController::class, 'store'])->name('sales.store');
+            //OrderServices
+            Route::get('/buscar-orden', [PosController::class, 'buscarOrden'])->name('buscarOrden');
+             // Detalle de la orden
+            Route::get('/orden/{id}', [PosController::class, 'detalleOrden'])->name('detalle.orden');
+
+            // Guardar cambios de la orden de servicio
+            Route::post('/orden/{id}/actualizar', [PosController::class, 'actualizarOrden'])->name('actualizar.orden');
+            Route::get('/pos/order-statuses', [PosController::class, 'obtenerEstadosPedido']);
+
 
             //Route::get('/orden-detalle/{id}', [PosController::class, 'detalleOrden'])->name('ordenDetalle');
             //Route::post('/guardar-orden', [PosController::class, 'guardarOrden'])->name('guardarOrden');

@@ -90,11 +90,10 @@
             <div class="card shadow-sm border-0">
                 <div class="card-body">
                     <div class="mb-3 position-relative">
-                        <input type="text" id="buscar_cliente" class="form-control" placeholder="Ingrese el número de orden del servicio...">
+                        <input type="text" id="buscar_orden_servicio" class="form-control" placeholder="Buscar número de orden de servicio...">
 
-                        {{-- Resultados dinámicos --}}
-                        <ul id="resultados_busqueda" 
-                            class="list-group position-absolute w-100 shadow-sm" 
+                        <ul id="resultados_ordenes" 
+                            class="list-group position-absolute w-100 shadow-sm"
                             style="top: 40px; z-index: 1050; display:none; max-height:220px; overflow-y:auto;">
                         </ul>
                     </div>
@@ -239,6 +238,55 @@
         </button>
         <button type="button" class="btn btn-success" id="btnConfirmarVentaFinal">
           <i class="fas fa-check-circle"></i> Confirmar y Registrar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Detalle Orden de Servicio -->
+<div class="modal fade" id="modalDetalleOrdenServicio" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg rounded-4">
+      <div class="modal-header bg-info text-white rounded-top-4">
+        <h5 class="modal-title fw-bold">
+          <i class="fas fa-soap me-2"></i> Detalle de la Orden de Servicio
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <div id="detalleOrdenServicioBody"></div>
+
+        <div class="mt-3">
+          <label class="fw-semibold">Estado de Pago:</label>
+          <select id="estadoPagoSelect" class="form-select">
+            <option value="pending">Pendiente</option>
+            <option value="partial">Pago parcial</option>
+            <option value="paid">Pagado completo</option>
+          </select>
+        </div>
+
+        <div class="mt-3">
+          <label class="fw-semibold">Monto Pagado:</label>
+          <input type="number" id="montoPagadoInput" class="form-control" min="0" step="0.01">
+        </div>
+
+        <div class="mt-3">
+          <label class="fw-semibold">Método de Pago:</label>
+          <select id="metodoPagoServicioSelect" class="form-select"></select>
+        </div>
+
+        <div class="mt-3">
+          <label class="fw-semibold">Submétodo de Pago:</label>
+          <select id="submetodoPagoServicioSelect" class="form-select"></select>
+        </div>
+      </div>
+
+      <div class="modal-footer bg-light rounded-bottom-4">
+        <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
+        <button class="btn btn-success" id="btnActualizarOrdenServicio">
+          <i class="fas fa-save"></i> Guardar cambios
         </button>
       </div>
     </div>
@@ -453,6 +501,106 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     });
+
+    // --- Buscar órdenes de servicio ---
+const inputBuscarOrden = document.getElementById('buscar_orden_servicio');
+const resultadosOrdenes = document.getElementById('resultados_ordenes');
+
+inputBuscarOrden.addEventListener('input', async () => {
+    const query = inputBuscarOrden.value.trim();
+    if (query.length < 2) {
+        resultadosOrdenes.style.display = 'none';
+        return;
+    }
+
+    const res = await fetch(`/admin/pos/buscar-orden?q=${query}`);
+    const data = await res.json();
+
+    resultadosOrdenes.innerHTML = '';
+    if (data.length > 0) {
+        data.forEach(o => {
+            resultadosOrdenes.insertAdjacentHTML('beforeend', `
+                <li class="list-group-item list-group-item-action" data-id="${o.id}">
+                    <strong>${o.order_number}</strong> - ${o.customer_name}
+                </li>
+            `);
+        });
+        resultadosOrdenes.style.display = 'block';
+    } else {
+        resultadosOrdenes.innerHTML = '<li class="list-group-item text-muted">No se encontraron resultados</li>';
+        resultadosOrdenes.style.display = 'block';
+    }
+});
+
+// --- Seleccionar una orden ---
+resultadosOrdenes.addEventListener('click', async (e) => {
+    const li = e.target.closest('li[data-id]');
+    if (!li) return;
+    const id = li.dataset.id;
+
+    const res = await fetch(`/admin/pos/orden/${id}`);
+    const data = await res.json();
+
+    if (data.error) {
+        Swal.fire('Error', data.error, 'error');
+        return;
+    }
+
+    // Mostrar número y cliente
+    document.getElementById('numero_orden').value = data.order_number;
+
+    // Abrir modal detalle
+    mostrarModalDetalleOrden(data);
+});
+
+async function mostrarModalDetalleOrden(data) {
+    const contenedor = document.getElementById('detalleOrdenServicioBody');
+    contenedor.innerHTML = `
+        <p><strong>Cliente:</strong> ${data.customer_name}</p>
+        <p><strong>Estado:</strong> ${data.order_status}</p>
+        <p><strong>Total:</strong> S/ ${Number(data.final_total).toFixed(2)}</p>
+        <hr>
+        <h6 class="fw-semibold">Servicios:</h6>
+        ${data.items.map(i => `
+            <div class="border-bottom py-2">
+                ${i.service_name} - ${i.quantity} × S/ ${Number(i.unit_price).toFixed(2)}
+
+            </div>
+        `).join('')}
+    `;
+
+    document.getElementById('estadoPagoSelect').value = data.payment_status || 'pending';
+    document.getElementById('montoPagadoInput').value = data.payment_amount || 0;
+
+    const modal = new bootstrap.Modal(document.getElementById('modalDetalleOrdenServicio'));
+    modal.show();
+
+    document.getElementById('btnActualizarOrdenServicio').onclick = async () => {
+        const payload = {
+            payment_status: document.getElementById('estadoPagoSelect').value,
+            payment_amount: parseFloat(document.getElementById('montoPagadoInput').value),
+            payment_method_id: document.getElementById('metodoPagoServicioSelect').value || null,
+            payment_submethod_id: document.getElementById('submetodoPagoServicioSelect').value || null,
+        };
+
+        const res = await fetch(`/admin/pos/orden/${data.id}/actualizar`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const result = await res.json();
+        if (result.success) {
+            Swal.fire('Éxito', result.message, 'success');
+            modal.hide();
+        } else {
+            Swal.fire('Error', result.message, 'error');
+        }
+    };
+}
 
     // --- Guardar y mostrar modal ---
     btnGuardar.addEventListener('click', () => {

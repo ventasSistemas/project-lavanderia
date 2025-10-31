@@ -150,4 +150,48 @@ class PosController extends Controller
         }
     }
 
+    public function actualizarOrden(Request $request, $id)
+    {
+        DB::beginTransaction();
+
+        try {
+            $order = Order::findOrFail($id);
+
+            $validated = $request->validate([
+                'payment_status' => 'required|string|in:pending,partial,paid',
+                'payment_amount' => 'required|numeric|min:0',
+                'payment_method_id' => 'nullable|exists:payment_methods,id',
+                'payment_submethod_id' => 'nullable|exists:payment_submethods,id',
+            ]);
+
+            $order->update([
+                'payment_status' => $validated['payment_status'],
+                'payment_amount' => $validated['payment_amount'],
+                'payment_method_id' => $validated['payment_method_id'],
+                'payment_submethod_id' => $validated['payment_submethod_id'],
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => '✅ Orden de servicio actualizada correctamente.'
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => '❌ Error al actualizar la orden: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function obtenerEstadosPedido()
+    {
+        $statuses = OrderStatus::select('id', 'name')->get();
+        return response()->json($statuses);
+    }
+
+
 }
