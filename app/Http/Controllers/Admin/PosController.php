@@ -52,6 +52,7 @@ class PosController extends Controller
             'items.service',
             'customer:id,full_name',
             'paymentMethod:id,name',
+            'paymentSubmethod:id,name',
             'status:id,name'
         ])->find($id);
 
@@ -68,6 +69,8 @@ class PosController extends Controller
             'payment_status' => $order->payment_status ?? 'pendiente',
             'payment_amount' => $order->payment_amount ?? 0,
             'final_total' => $order->final_total ?? 0,
+            'payment_method_id' => $order->payment_method_id,
+            'payment_submethod_id' => $order->payment_submethod_id,
             'payment_method' => $order->paymentMethod->name ?? 'No especificado',
             'updated_at' => $order->updated_at->format('d/m/Y H:i'),
             'items' => $order->items->map(function ($item) {
@@ -145,7 +148,7 @@ class PosController extends Controller
             DB::rollBack();
             return response()->json([
                 'success' => false,
-                'message' => '❌ Error al registrar la orden: ' . $e->getMessage(),
+                'message' => 'Error al registrar la orden: ' . $e->getMessage(),
             ], 500);
         }
     }
@@ -158,31 +161,35 @@ class PosController extends Controller
             $order = Order::findOrFail($id);
 
             $validated = $request->validate([
+                'order_status_id' => 'nullable|exists:order_status,id',
                 'payment_status' => 'required|string|in:pending,partial,paid',
                 'payment_amount' => 'required|numeric|min:0',
                 'payment_method_id' => 'nullable|exists:payment_methods,id',
                 'payment_submethod_id' => 'nullable|exists:payment_submethods,id',
+                'payment_returned' => 'nullable|numeric|min:0',
             ]);
 
             $order->update([
+                'order_status_id' => $validated['order_status_id'] ?? $order->order_status_id,
                 'payment_status' => $validated['payment_status'],
                 'payment_amount' => $validated['payment_amount'],
                 'payment_method_id' => $validated['payment_method_id'],
                 'payment_submethod_id' => $validated['payment_submethod_id'],
+                'payment_returned' => $validated['payment_returned'] ?? 0,
             ]);
 
             DB::commit();
 
             return response()->json([
                 'success' => true,
-                'message' => '✅ Orden de servicio actualizada correctamente.'
+                'message' => 'Orden de servicio actualizada correctamente.'
             ]);
 
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
                 'success' => false,
-                'message' => '❌ Error al actualizar la orden: ' . $e->getMessage(),
+                'message' => 'Error al actualizar la orden: ' . $e->getMessage(),
             ], 500);
         }
     }

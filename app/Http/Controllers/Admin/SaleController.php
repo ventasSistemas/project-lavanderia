@@ -23,7 +23,7 @@ class SaleController extends Controller
             // Generar número de orden automáticamente
             $lastSale = Sale::latest('id')->first();
             $nextNumber = $lastSale ? intval(substr($lastSale->order_number, 4)) + 1 : 1;
-            $orderNumber = 'ORD-' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+            $orderNumber = 'PRO-' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
 
             $data = $request->validate([
                 'sale_date' => 'required|date',
@@ -83,7 +83,7 @@ class SaleController extends Controller
     {
         $lastSale = Sale::latest('id')->first();
         $nextNumber = $lastSale ? intval(substr($lastSale->order_number, 4)) + 1 : 1;
-        $orderNumber = 'ORD-' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+        $orderNumber = 'PRO-' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
 
         return response()->json(['next_order_number' => $orderNumber]);
     }

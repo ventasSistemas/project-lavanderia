@@ -100,22 +100,24 @@ class OrderController extends Controller
             $tax = $request->tax ?? 0;
             $paymentAmount = $request->payment_amount ?? 0;
 
-            // Calcular total final (costo total)
+            // Calcular total final
             $finalTotal = $total - $discount + $tax;
             $finalTotal = max(0, $finalTotal);
 
             // Calcular vuelto
-            $paymentReturned = 0;
-            if ($paymentAmount > $finalTotal) {
-                $paymentReturned = $paymentAmount - $finalTotal;
-            }
+            $paymentReturned = $paymentAmount > $finalTotal ? $paymentAmount - $finalTotal : 0;
 
-            // Respetar el estado de pago enviado desde el formulario
+            // Estado de pago
             $paymentStatus = $request->payment_status ?? 'pending';
+
+            // Generar número de orden incremental (ORD-0001, ORD-0002, ...)
+            $lastOrder = Order::latest('id')->first();
+            $nextNumber = $lastOrder ? intval(substr($lastOrder->order_number, 4)) + 1 : 1;
+            $orderNumber = 'SRV-' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
 
             // Crear la orden
             $order = Order::create([
-                'order_number' => 'ORD-' . strtoupper(Str::random(6)),
+                'order_number' => $orderNumber,
                 'customer_id' => $request->customer_id,
                 'employee_id' => Auth::id(),
                 'branch_id' => $request->branch_id,
@@ -134,7 +136,7 @@ class OrderController extends Controller
                 'notes' => $request->notes,
             ]);
 
-            // Guardar los items
+            // Guardar los ítems
             foreach ($request->order_items as $item) {
                 $order->items()->create([
                     'service_id' => $item['service_id'],
@@ -148,6 +150,7 @@ class OrderController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Orden creada exitosamente.',
+                'order_number' => $orderNumber,
                 'ticket_url' => route('admin.orders.ticket', $order->id),
                 'redirect_url' => route('admin.orders.index')
             ]);
@@ -259,7 +262,7 @@ class OrderController extends Controller
         $categories = ServiceCategory::with('services')->get();
         $paymentMethods = PaymentMethod::with('submethods')->get();
 
-        // 🔹 Calculamos los totales a mostrar
+        // Calculamos los totales a mostrar
         $order->subtotal = $order->total_amount ?? 0;
         $order->total = $order->final_total ?? ($order->total_amount - $order->discount + $order->tax);
 
