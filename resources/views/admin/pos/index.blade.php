@@ -257,32 +257,6 @@
 
       <div class="modal-body">
         <div id="detalleOrdenServicioBody"></div>
-
-        <div class="mt-3">
-          <label class="fw-semibold">Estado de Pago:</label>
-          <select id="estadoPagoSelect" class="form-select">
-            <option value="pending">Pendiente</option>
-            <option value="partial">Pago parcial</option>
-            <option value="paid">Pagado completo</option>
-          </select>
-        </div>
-
-        <div class="mt-3">
-          <label class="fw-semibold">Monto Pagado:</label>
-          <input type="number" id="montoPagadoInput" class="form-control" min="0" step="0.01">
-        </div>
-
-        <div class="mt-3">
-          <label class="fw-semibold">Método de Pago:</label>
-          <select id="metodoPagoServicioSelect" class="form-select"></select>
-        </div>
-
-        <div class="mt-3">
-          <label class="fw-semibold">Submétodo de Pago:</label>
-          <select id="submetodoPagoServicioSelect" class="form-select"></select>
-        </div>
-      </div>
-
       <div class="modal-footer bg-light rounded-bottom-4">
         <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
         <button class="btn btn-success" id="btnActualizarOrdenServicio">
@@ -292,6 +266,7 @@
     </div>
   </div>
 </div>
+
 
 <style>
 .modal-altura-custom {
@@ -502,6 +477,8 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
+
+
     // --- Buscar órdenes de servicio ---
 const inputBuscarOrden = document.getElementById('buscar_orden_servicio');
 const resultadosOrdenes = document.getElementById('resultados_ordenes');
@@ -555,52 +532,155 @@ resultadosOrdenes.addEventListener('click', async (e) => {
 
 async function mostrarModalDetalleOrden(data) {
     const contenedor = document.getElementById('detalleOrdenServicioBody');
-    contenedor.innerHTML = `
-        <p><strong>Cliente:</strong> ${data.customer_name}</p>
-        <p><strong>Estado:</strong> ${data.order_status}</p>
-        <p><strong>Total:</strong> S/ ${Number(data.final_total).toFixed(2)}</p>
-        <hr>
-        <h6 class="fw-semibold">Servicios:</h6>
-        ${data.items.map(i => `
-            <div class="border-bottom py-2">
-                ${i.service_name} - ${i.quantity} × S/ ${Number(i.unit_price).toFixed(2)}
 
+    // --- Obtener estados de orden ---
+    const estadosResponse = await fetch('/admin/pos/order-statuses');
+    const estados = await estadosResponse.json();
+
+    // --- Obtener métodos de pago y submétodos ---
+    const metodosResponse = await fetch('/admin/pos/payment-methods');
+    const metodos = await metodosResponse.json();
+
+    // --- Opciones de estado de orden ---
+    const opcionesEstados = estados.map(est => `
+        <option value="${est.id}" ${est.name === data.order_status ? 'selected' : ''}>
+            ${est.name}
+        </option>
+    `).join('');
+
+    // --- Opciones de estado de pago ---
+    const estadosPago = [
+        { value: 'pending', label: 'Pendiente' },
+        { value: 'partial', label: 'Pago parcial' },
+        { value: 'paid', label: 'Pagado completo' }
+    ];
+
+    const opcionesPago = estadosPago.map(ep => `
+        <option value="${ep.value}" ${ep.value === data.payment_status ? 'selected' : ''}>
+            ${ep.label}
+        </option>
+    `).join('');
+
+    // --- Opciones de método de pago ---
+    const opcionesMetodos = metodos.map(m => `
+        <option value="${m.id}" ${m.id === data.payment_method_id ? 'selected' : ''}>
+            ${m.name}
+        </option>
+    `).join('');
+
+    // --- Opciones de submétodo ---
+    const metodoActual = metodos.find(m => m.id === data.payment_method_id);
+    const submetodos = metodoActual ? metodoActual.submethods : [];
+    const opcionesSubmetodos = submetodos.map(s => `
+        <option value="${s.id}" ${s.id === data.payment_submethod_id ? 'selected' : ''}>
+            ${s.name}
+        </option>
+    `).join('');
+
+    // --- Cálculos ---
+    const subtotal = Number(data.final_total) + Number(data.discount || 0) - Number(data.tax || 0);
+    const restante = Math.max(0, Number(data.final_total) - Number(data.payment_amount || 0));
+    const vuelto = Math.max(0, Number(data.payment_amount || 0) - Number(data.final_total || 0));
+
+    // --- Contenido del modal ---
+    contenedor.innerHTML = `
+        <div class="mb-3">
+            <p><strong>Número de Orden:</strong> ${data.order_number}</p>
+            <p><strong>Cliente:</strong> ${data.customer_name}</p>
+            <p><strong>Fecha Actualización:</strong> ${data.updated_at}</p>
+        </div>
+
+        <div class="mt-2">
+            <label class="fw-semibold"><i class="fas fa-clipboard-check me-1"></i> Estado de Orden:</label>
+            <select id="estadoOrdenSelect" class="form-select">
+                ${opcionesEstados}
+            </select>
+        </div>
+
+        <div class="mt-3">
+            <label class="fw-semibold"><i class="fas fa-money-bill-wave me-1"></i> Estado de Pago:</label>
+            <select id="estadoPagoSelect" class="form-select">
+                ${opcionesPago}
+            </select>
+        </div>
+
+        <hr>
+        <h6 class="fw-semibold text-primary mt-3">Servicios:</h6>
+        ${data.items.map(i => `
+            <div class="border-bottom py-2 d-flex justify-content-between">
+                <span>${i.service_name}</span>
+                <span>${i.quantity} × S/ ${Number(i.unit_price).toFixed(2)}</span>
             </div>
         `).join('')}
+
+        <div class="mt-3 p-3 bg-light rounded">
+            <div class="d-flex justify-content-between">
+                <span>Subtotal:</span>
+                <span>S/ ${subtotal.toFixed(2)}</span>
+            </div>
+            <div class="d-flex justify-content-between">
+                <span>Descuento:</span>
+                <span>- S/ ${Number(data.discount || 0).toFixed(2)}</span>
+            </div>
+            <div class="d-flex justify-content-between">
+                <span>Impuesto:</span>
+                <span>+ S/ ${Number(data.tax || 0).toFixed(2)}</span>
+            </div>
+            <hr>
+            <div class="d-flex justify-content-between fw-semibold text-dark">
+                <span>Total:</span>
+                <span>S/ ${Number(data.final_total || 0).toFixed(2)}</span>
+            </div>
+        </div>
+
+        <div class="mt-4">
+            <label class="fw-semibold"><i class="fa-solid fa-money-check-dollar me-1"></i> Monto Pagado:</label>
+            <input type="number" id="montoPagadoInput" class="form-control" 
+                min="0" value="${Number(data.payment_amount || 0).toFixed(2)}" step="0.01">
+        </div>
+
+        <div class="mt-3 p-3 bg-light rounded">
+            <div class="d-flex justify-content-between text-danger">
+                <span>Restante por pagar:</span>
+                <span>S/ ${restante.toFixed(2)}</span>
+            </div>
+            <div class="d-flex justify-content-between text-success">
+                <span>Vuelto (si aplica):</span>
+                <span>S/ ${vuelto.toFixed(2)}</span>
+            </div>
+        </div>
+
+        <div class="mt-3">
+            <label class="fw-semibold"><i class="fas fa-credit-card me-1"></i> Método de Pago:</label>
+            <select id="metodoPagoServicioSelect" class="form-select">
+                ${opcionesMetodos}
+            </select>
+        </div>
+
+        <div class="mt-3">
+            <label class="fw-semibold"><i class="fas fa-hand-holding-usd me-1"></i> Submétodo de Pago:</label>
+            <select id="submetodoPagoServicioSelect" class="form-select">
+                ${opcionesSubmetodos}
+            </select>
+        </div>
     `;
 
-    document.getElementById('estadoPagoSelect').value = data.payment_status || 'pending';
-    document.getElementById('montoPagadoInput').value = data.payment_amount || 0;
+    // --- Evento: actualizar submétodos dinámicamente ---
+    document.getElementById('metodoPagoServicioSelect').addEventListener('change', (e) => {
+        const metodoSeleccionado = metodos.find(m => m.id == e.target.value);
+        const subSelect = document.getElementById('submetodoPagoServicioSelect');
+        subSelect.innerHTML = metodoSeleccionado
+            ? metodoSeleccionado.submethods.map(s => `<option value="${s.id}">${s.name}</option>`).join('')
+            : '<option value="">-- Sin submétodos --</option>';
+    });
 
+    // --- Mostrar el modal ---
     const modal = new bootstrap.Modal(document.getElementById('modalDetalleOrdenServicio'));
     modal.show();
-
-    document.getElementById('btnActualizarOrdenServicio').onclick = async () => {
-        const payload = {
-            payment_status: document.getElementById('estadoPagoSelect').value,
-            payment_amount: parseFloat(document.getElementById('montoPagadoInput').value),
-            payment_method_id: document.getElementById('metodoPagoServicioSelect').value || null,
-            payment_submethod_id: document.getElementById('submetodoPagoServicioSelect').value || null,
-        };
-
-        const res = await fetch(`/admin/pos/orden/${data.id}/actualizar`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            },
-            body: JSON.stringify(payload)
-        });
-
-        const result = await res.json();
-        if (result.success) {
-            Swal.fire('Éxito', result.message, 'success');
-            modal.hide();
-        } else {
-            Swal.fire('Error', result.message, 'error');
-        }
-    };
 }
+
+
+
 
     // --- Guardar y mostrar modal ---
     btnGuardar.addEventListener('click', () => {

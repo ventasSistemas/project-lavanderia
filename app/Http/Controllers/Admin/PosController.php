@@ -193,5 +193,13 @@ class PosController extends Controller
         return response()->json($statuses);
     }
 
+    public function submethods()
+    {
+        // Trae los métodos con sus submétodos asociados
+        $methods = PaymentMethod::with('submethods:id,payment_method_id,name')->get(['id', 'name']);
+        return response()->json($methods);
+    }
+
+
 
 }

@@ -171,6 +171,7 @@ Route::middleware('auth')->group(function () {
         Route::prefix('pos')->name('pos.')->group(function () {
             Route::get('/', [PosController::class, 'index'])->name('index');
             Route::get('/payment-methods', [SaleController::class, 'index']);
+            Route::get('/payment-methods', [PosController::class, 'submethods']);
             Route::get('/next-order-number', [SaleController::class, 'nextOrderNumber']);
             Route::post('/sales', [SaleController::class, 'store'])->name('sales.store');
             //OrderServices
@@ -180,7 +181,7 @@ Route::middleware('auth')->group(function () {
 
             // Guardar cambios de la orden de servicio
             Route::post('/orden/{id}/actualizar', [PosController::class, 'actualizarOrden'])->name('actualizar.orden');
-            Route::get('/pos/order-statuses', [PosController::class, 'obtenerEstadosPedido']);
+            Route::get('/order-statuses', [PosController::class, 'obtenerEstadosPedido']);
 
 
             //Route::get('/orden-detalle/{id}', [PosController::class, 'detalleOrden'])->name('ordenDetalle');
