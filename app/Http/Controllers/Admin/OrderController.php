@@ -12,10 +12,13 @@ use App\Models\Branch;
 use App\Models\Service;
 use App\Models\OrderStatus;
 use App\Models\PaymentMethod;   
+use App\Models\CashMovement;   
+use App\Models\CashRegister;   
 use App\Models\PaymentSubmethod;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth; 
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class OrderController extends Controller
@@ -88,6 +91,20 @@ class OrderController extends Controller
         DB::beginTransaction();
 
         try {
+
+            // Verificar si el usuario tiene caja abierta
+                $cashRegister = CashRegister::where('user_id', Auth::id())
+                    ->where('status', 'open')
+                    ->first();
+
+                if (!$cashRegister) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'No puedes registrar una orden porque no tienes una caja abierta. 
+                                    Debes abrir tu caja antes de procesar ventas o pagos.',
+                    ], 400);
+            }
+
             // Calcular total de servicios
             $total = 0;
             foreach ($request->order_items as $item) {
@@ -145,6 +162,45 @@ class OrderController extends Controller
                 ]);
             }
 
+            // Registrar movimiento en caja si hay pago
+            if ($paymentAmount > 0) {
+                // Buscar la caja abierta del usuario
+                $cashRegister = CashRegister::where('user_id', Auth::id())
+                    ->where('status', 'open')
+                    ->first();
+
+                if ($cashRegister) {
+                    // Registrar el movimiento de venta
+                    CashMovement::create([
+                        'cash_register_id' => $cashRegister->id,
+                        'user_id' => Auth::id(),
+                        'type' => 'sale',
+                        'amount' => $paymentAmount,
+                        'concept' => "Venta - Orden {$orderNumber}",
+                        'movement_date' => now(),
+                    ]);
+
+                    // Actualizar totales de la caja
+                    $cashRegister->increment('total_sales', $paymentAmount);
+
+                    // Si hay vuelto, registrar también un egreso
+                    if ($paymentReturned > 0) {
+                        CashMovement::create([
+                            'cash_register_id' => $cashRegister->id,
+                            'user_id' => Auth::id(),
+                            'type' => 'expense',
+                            'amount' => $paymentReturned,
+                            'concept' => "Vuelto - Orden {$orderNumber}",
+                            'movement_date' => now(),
+                        ]);
+
+                        // Restar el vuelto al total de egresos
+                        $cashRegister->increment('total_expense', $paymentReturned);
+                    }
+
+                }
+            }
+
             DB::commit();
 
             return response()->json([
@@ -163,7 +219,6 @@ class OrderController extends Controller
             ]);
         }
     }
-
 
     public function show(Order $order)
     {

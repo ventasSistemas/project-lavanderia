@@ -28,7 +28,7 @@
                     @endif
                 </a>
 
-                <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="notifDropdown" style="width: 500px;">
+                <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="notifDropdown" style="width: 400px;">
                     <li class="dropdown-header fw-semibold text-center bg-light">Notificaciones de Ordenes</li>
 
                     @forelse($notifications as $notif)
@@ -45,6 +45,42 @@
                                     @endif
                                 </div>
                             </a>
+                        </li>
+                    @empty
+                        <li><div class="dropdown-item text-muted small text-center">Sin notificaciones recientes</div></li>
+                    @endforelse
+                </ul>
+            </li>
+
+            
+            @php
+                $cashNotifications = \App\Models\CashNotification::with('cashRegister.user')
+                        ->where('user_id', Auth::id())
+                        ->latest()
+                        ->take(5)
+                        ->get(); 
+            @endphp
+
+            <!-- Notificaciones de Cierre de Caja -->
+            <li class="nav-item dropdown me-3">
+                <a class="nav-link position-relative" href="#" id="cashNotifDropdown" data-bs-toggle="dropdown">
+                    <i class="fa-solid fa-cash-register fa-lg text-success"></i>
+                    @if($cashNotifications->where('is_read', false)->count() > 0)
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                            {{ $cashNotifications->where('is_read', false)->count() }}
+                        </span>
+                    @endif
+                </a>
+
+                <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="cashNotifDropdown" style="width: 400px;">
+                    <li class="dropdown-header fw-semibold text-center bg-light">Notificaciones de Caja</li>
+                    @forelse($cashNotifications as $notif)
+                        <li>
+                            <div class="dropdown-item small">
+                                <div><strong>{{ $notif->cashRegister->user->full_name }}</strong></div>
+                                <div class="text-muted">{{ $notif->message }}</div>
+                                <small class="text-muted">{{ $notif->created_at->diffForHumans() }}</small>
+                            </div>
                         </li>
                     @empty
                         <li><div class="dropdown-item text-muted small text-center">Sin notificaciones recientes</div></li>
@@ -76,3 +112,10 @@
         </ul>
     </div>
 </nav>
+
+<style>
+.dropdown-menu .dropdown-item .text-muted {
+    white-space: normal;
+    word-wrap: break-word;
+}
+</style>

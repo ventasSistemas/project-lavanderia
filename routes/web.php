@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 
+use App\Http\Controllers\Admin\CashRegisterController;
 use App\Http\Controllers\Admin\SaleController;
 use App\Http\Controllers\Admin\ComplementaryProductCategoryController;
 use App\Http\Controllers\Admin\ComplementaryProductController;
@@ -187,6 +188,14 @@ Route::middleware('auth')->group(function () {
             //Route::get('/orden-detalle/{id}', [PosController::class, 'detalleOrden'])->name('ordenDetalle');
             //Route::post('/guardar-orden', [PosController::class, 'guardarOrden'])->name('guardarOrden');
         });
+
+        Route::prefix('cash')->name('cash.')->group(function () {
+            Route::get('/', [CashRegisterController::class, 'index'])->name('index');
+            Route::post('/open', [CashRegisterController::class, 'open'])->name('open');
+            Route::post('/movement', [CashRegisterController::class, 'movement'])->name('movement');
+            Route::post('/close', [CashRegisterController::class, 'close'])->name('close');
+        });
+        
     });
 
 });

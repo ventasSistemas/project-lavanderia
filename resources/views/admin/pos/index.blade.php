@@ -189,10 +189,11 @@
                 <span>Descuento:</span>
                 <span id="descuento_modal">S/ 0.00</span>
             </div>
+            <!--
             <div class="d-flex justify-content-between">
                 <span>Impuesto:</span>
                 <span id="impuesto_modal">S/ 0.00</span>
-            </div>
+            </div>-->
             <div class="d-flex justify-content-between fw-bold border-top mt-2 pt-2">
                 <span>Total:</span>
                 <span id="total_modal">S/ 0.00</span>
@@ -687,10 +688,11 @@ async function mostrarModalDetalleOrden(data) {
                 <span>Descuento:</span>
                 <span>- S/ ${Number(data.discount || 0).toFixed(2)}</span>
             </div>
+            <!--
             <div class="d-flex justify-content-between">
                 <span>Impuesto:</span>
                 <span>+ S/ ${Number(data.tax || 0).toFixed(2)}</span>
-            </div>
+            </div>-->
             <hr>
             <div class="d-flex justify-content-between fw-semibold text-dark">
                 <span>Total:</span>
@@ -874,8 +876,9 @@ async function mostrarModalDetalleOrden(data) {
         });
 
         let descuento = 0; 
-        let impuesto = 1; 
-        let total = subtotal - descuento + impuesto;
+        //let impuesto = 0; 
+        //let total = subtotal - descuento + impuesto;
+        let total = subtotal - descuento;
         let montoRecibido = total; 
         let vuelto = montoRecibido - total;
         let metodoPagoSeleccionadoNombre = "Efectivo"; 
@@ -886,7 +889,7 @@ async function mostrarModalDetalleOrden(data) {
         document.getElementById('fechaOrdenModal').textContent = document.getElementById('fecha_orden').value;
         document.getElementById('subtotal_modal').textContent = `S/ ${subtotal.toFixed(2)}`;
         document.getElementById('descuento_modal').textContent = `S/ ${descuento.toFixed(2)}`;
-        document.getElementById('impuesto_modal').textContent = `S/ ${impuesto.toFixed(2)}`;
+        //document.getElementById('impuesto_modal').textContent = `S/ ${impuesto.toFixed(2)}`;
         document.getElementById('total_modal').textContent = `S/ ${total.toFixed(2)}`;
         document.getElementById('vuelto_modal').textContent = `S/ ${vuelto.toFixed(2)}`;
         //document.getElementById('submetodo_pago_modal').textContent = submetodoPagoSeleccionadoNombre;
@@ -921,7 +924,7 @@ async function mostrarModalDetalleOrden(data) {
                 sale_date: document.getElementById('fecha_orden').value,
                 subtotal,
                 descuento,
-                impuesto,
+                //impuesto,
                 total,
                 amount_received: parseFloat(document.getElementById('montoRecibidoInput').value) || 0,
                 change_given: parseFloat(document.getElementById('vuelto_modal').textContent.replace('S/', '')) || 0,

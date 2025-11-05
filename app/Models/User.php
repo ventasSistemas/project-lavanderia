@@ -40,6 +40,11 @@ class User extends Authenticatable
     {
         return $this->belongsTo(Branch::class);
     }
+    
+    public function cashRegisters()
+    {
+        return $this->hasMany(CashRegister::class);
+    }
 
     public function customers()
     {

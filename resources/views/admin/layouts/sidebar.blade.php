@@ -68,7 +68,7 @@
         </li>
         <li>
             <a href="{{ route('admin.complementary-product-categories.index') }}" class="nav-link {{ request()->routeIs('admin.complementary-product-categories.index') ? 'active' : '' }}">
-                <i class="fa-solid fa-dumpster-fire"></i> P. Complementarios
+                <i class="fa-solid fa-dumpster-fire"></i> Prodctos Complement.
             </a>
         </li>
 
@@ -82,26 +82,29 @@
 
         <!-- Informes -->
         <li class="section-title mt-3">Informes</li>
+        <!--
         <li>
             <a href="#" class="nav-link {{ request()->routeIs('admin.reporte.diario') ? 'active' : '' }}">
                 <i class="fa-solid fa-calendar-day me-2"></i> Reporte Diario
             </a>
-        </li>
+        </li>-->
+        <!--
         <li>
             <a href="#" class="nav-link {{ request()->routeIs('admin.informe.pedido') ? 'active' : '' }}">
                 <i class="fa-solid fa-file-lines me-2"></i> Informe de Pedido
             </a>
-        </li>
+        </li>-->
         <li>
             <a href="#" class="nav-link {{ request()->routeIs('admin.reporte.ventas') ? 'active' : '' }}">
                 <i class="fa-solid fa-chart-column me-2"></i> Reporte de Ventas
             </a>
         </li>
+        <!--
         <li>
             <a href="#" class="nav-link {{ request()->routeIs('admin.informe.gastos') ? 'active' : '' }}">
                 <i class="fa-solid fa-wallet me-2"></i> Informe de Gastos
             </a>
-        </li>
+        </li>-->
 
         <!-- Configuración -->
         <li class="section-title mt-3">Configuración</li>
@@ -115,12 +118,12 @@
                 <i class="fa-solid fa-building me-2"></i> Sucursales
             </a>
         </li>
-        <!--
+        
         <li>
-            <a href="#" class="nav-link {{ request()->routeIs('admin.inventario') ? 'active' : '' }}">
-                <i class="fa-solid fa-boxes-stacked me-2"></i> Inventario
+            <a href="{{ route('admin.cash.index') }}" class="nav-link {{ request()->routeIs('admin.cash.index') ? 'active' : '' }}">
+                <i class="fa-solid fa-boxes-stacked me-2"></i> Caja
             </a>
-        </li>-->
+        </li>
 
         <!-- Cerrar sesión -->
         <hr class="text-white mt-4">
