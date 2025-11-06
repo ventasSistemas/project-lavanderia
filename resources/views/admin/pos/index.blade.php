@@ -261,6 +261,16 @@
 
       <div class="modal-body">
         <div id="detalleOrdenServicioBody"></div>
+
+        <!-- Entregado por -->
+        <div class="mt-3 p-2 bg-light rounded border">
+          <p class="mb-0 fw-semibold text-secondary">
+            <i class="fas fa-user-check text-success me-1"></i>
+            <span id="entregadoPorTexto">Aún no entregado</span>
+          </p>
+        </div>
+      </div>
+
       <div class="modal-footer bg-light rounded-bottom-4">
         <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
         <button class="btn btn-success" id="btnActualizarOrdenServicio">
@@ -484,64 +494,63 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
     // --- Buscar órdenes de servicio ---
-const inputBuscarOrden = document.getElementById('buscar_orden_servicio');
-const resultadosOrdenes = document.getElementById('resultados_ordenes');
+    const inputBuscarOrden = document.getElementById('buscar_orden_servicio');
+    const resultadosOrdenes = document.getElementById('resultados_ordenes');
 
-inputBuscarOrden.addEventListener('input', async () => {
-  let numero = inputBuscarOrden.value.replace(/\D/g, '');
-  if (numero.length < 2) {
-    resultadosOrdenes.style.display = 'none';
-    return;
-  }
-
-  const query = `SRV-${numero}`; 
-  //console.log('Buscando orden:', query);
-
-  try {
-    const res = await fetch(`/admin/pos/buscar-orden?q=${query}`);
-    const data = await res.json();
-
-    resultadosOrdenes.innerHTML = '';
-    if (data.length > 0) {
-      data.forEach(o => {
-        resultadosOrdenes.insertAdjacentHTML('beforeend', `
-          <li class="list-group-item list-group-item-action" data-id="${o.id}">
-            <strong>${o.order_number}</strong> - ${o.customer_name}
-          </li>
-        `);
-      });
-      resultadosOrdenes.style.display = 'block';
-    } else {
-      resultadosOrdenes.innerHTML = '<li class="list-group-item text-muted">No se encontraron resultados</li>';
-      resultadosOrdenes.style.display = 'block';
-    }
-  } catch (error) {
-    console.error('Error al buscar orden:', error);
-    resultadosOrdenes.innerHTML = '<li class="list-group-item text-danger">Error al buscar</li>';
-    resultadosOrdenes.style.display = 'block';
-  }
-});
-
-// --- Seleccionar una orden ---
-resultadosOrdenes.addEventListener('click', async (e) => {
-    const li = e.target.closest('li[data-id]');
-    if (!li) return;
-    const id = li.dataset.id;
-
-    const res = await fetch(`/admin/pos/orden/${id}`);
-    const data = await res.json();
-
-    if (data.error) {
-        Swal.fire('Error', data.error, 'error');
+    inputBuscarOrden.addEventListener('input', async () => {
+    let numero = inputBuscarOrden.value.replace(/\D/g, '');
+    if (numero.length < 2) {
+        resultadosOrdenes.style.display = 'none';
         return;
     }
 
-    // Mostrar número y cliente
-    document.getElementById('numero_orden').value = data.order_number;
+    const query = `SRV-${numero}`; 
 
-    // Abrir modal detalle
-    mostrarModalDetalleOrden(data);
-});
+    try {
+        const res = await fetch(`/admin/pos/buscar-orden?q=${query}`);
+        const data = await res.json();
+
+        resultadosOrdenes.innerHTML = '';
+        if (data.length > 0) {
+        data.forEach(o => {
+            resultadosOrdenes.insertAdjacentHTML('beforeend', `
+            <li class="list-group-item list-group-item-action" data-id="${o.id}">
+                <strong>${o.order_number}</strong> - ${o.customer_name}
+            </li>
+            `);
+        });
+        resultadosOrdenes.style.display = 'block';
+        } else {
+        resultadosOrdenes.innerHTML = '<li class="list-group-item text-muted">No se encontraron resultados</li>';
+        resultadosOrdenes.style.display = 'block';
+        }
+    } catch (error) {
+        console.error('Error al buscar orden:', error);
+        resultadosOrdenes.innerHTML = '<li class="list-group-item text-danger">Error al buscar</li>';
+        resultadosOrdenes.style.display = 'block';
+    }
+    });
+
+    // --- Seleccionar una orden ---
+    resultadosOrdenes.addEventListener('click', async (e) => {
+        const li = e.target.closest('li[data-id]');
+        if (!li) return;
+        const id = li.dataset.id;
+
+        const res = await fetch(`/admin/pos/orden/${id}`);
+        const data = await res.json();
+
+        if (data.error) {
+            Swal.fire('Error', data.error, 'error');
+            return;
+        }
+
+        // Mostrar número y cliente
+        document.getElementById('numero_orden').value = data.order_number;
+
+        // Abrir modal detalle
+        mostrarModalDetalleOrden(data);
+    });
 
 async function mostrarModalDetalleOrden(data) {
     const contenedor = document.getElementById('detalleOrdenServicioBody');
@@ -554,13 +563,12 @@ async function mostrarModalDetalleOrden(data) {
     const metodosResponse = await fetch('/admin/pos/payment-methods');
     const metodos = await metodosResponse.json();
 
-    // --- Opciones de estado de orden (filtradas según el estado actual) ---
-    let opcionesEstados = '';
-
+    // --- Estado actual ---
     const estadoActual = data.order_status?.toLowerCase() || 'pendiente';
 
+    // --- Opciones de estado de orden ---
+    let opcionesEstados = '';
     if (estadoActual === 'terminado') {
-        // Solo permitir cambiar entre "Terminado" y "Entregado"
         const estadosFiltrados = estados.filter(est =>
             ['terminado', 'entregado'].includes(est.name.toLowerCase())
         );
@@ -570,17 +578,16 @@ async function mostrarModalDetalleOrden(data) {
             </option>
         `).join('');
     } else {
-        // Si no está terminado, solo mostrar su estado actual (sin poder cambiar)
         const estadoSolo = estados.find(est => est.name.toLowerCase() === estadoActual);
-        opcionesEstados = estadoSolo ? `
-            <option value="${estadoSolo.id}" selected>${estadoSolo.name}</option>
-        ` : '<option selected>Sin estado</option>';
+        opcionesEstados = estadoSolo
+            ? `<option value="${estadoSolo.id}" selected>${estadoSolo.name}</option>`
+            : '<option selected>Sin estado</option>';
     }
 
     // --- Opciones de estado de pago ---
     const estadosPago = [
         { value: 'pending', label: 'Pendiente' },
-        { value: 'partial', label: 'Pago Imcompleto' },
+        { value: 'partial', label: 'Pago incompleto' },
         { value: 'paid', label: 'Pagado completo' }
     ];
 
@@ -590,9 +597,8 @@ async function mostrarModalDetalleOrden(data) {
         </option>
     `).join('');
 
-    // --- Opciones de método de pago ---
+    // --- Opciones de métodos de pago ---
     let opcionesMetodos = '<option value="">No especificado</option>';
-
     if (metodos.length > 0) {
         opcionesMetodos += metodos.map(m => `
             <option value="${m.id}" ${m.id === data.payment_method_id ? 'selected' : ''}>
@@ -600,8 +606,6 @@ async function mostrarModalDetalleOrden(data) {
             </option>
         `).join('');
     }
-
-    // Si no tiene método seleccionado, dejamos "No especificado" como selected
     if (!data.payment_method_id) {
         opcionesMetodos = opcionesMetodos.replace(
             '<option value="">No especificado</option>',
@@ -612,16 +616,13 @@ async function mostrarModalDetalleOrden(data) {
     // --- Opciones de submétodo ---
     let opcionesSubmetodos = '<option value="">No especificado</option>';
     const metodoActual = metodos.find(m => m.id === data.payment_method_id);
-
-    if (metodoActual && metodoActual.submethods && metodoActual.submethods.length) {
+    if (metodoActual && metodoActual.submethods?.length) {
         opcionesSubmetodos += metodoActual.submethods.map(s => `
             <option value="${s.id}" ${s.id === data.payment_submethod_id ? 'selected' : ''}>
                 ${s.name}
             </option>
         `).join('');
     }
-
-    // Si no tiene submétodo asignado, aseguramos que “No especificado” esté seleccionado
     if (!data.payment_submethod_id) {
         opcionesSubmetodos = opcionesSubmetodos.replace(
             '<option value="">No especificado</option>',
@@ -634,7 +635,9 @@ async function mostrarModalDetalleOrden(data) {
     const restante = Math.max(0, Number(data.final_total) - Number(data.payment_amount || 0));
     const vuelto = Math.max(0, Number(data.payment_amount || 0) - Number(data.final_total || 0));
 
-    // --- Contenido del modal ---
+    
+
+    // --- Render modal ---
     contenedor.innerHTML = `
         <div class="mb-3">
             <p><strong>Número de Orden:</strong> ${data.order_number}</p>
@@ -688,15 +691,14 @@ async function mostrarModalDetalleOrden(data) {
                 <span>Descuento:</span>
                 <span>- S/ ${Number(data.discount || 0).toFixed(2)}</span>
             </div>
-            <!--
-            <div class="d-flex justify-content-between">
-                <span>Impuesto:</span>
-                <span>+ S/ ${Number(data.tax || 0).toFixed(2)}</span>
-            </div>-->
             <hr>
             <div class="d-flex justify-content-between fw-semibold text-dark">
                 <span>Total:</span>
                 <span>S/ ${Number(data.final_total || 0).toFixed(2)}</span>
+            </div>
+            <div class="d-flex justify-content-between text-danger fw-semibold mt-2">
+                <span>Faltante:</span>
+                <span>S/ ${restante.toFixed(2)}</span>
             </div>
         </div>
 
@@ -712,68 +714,142 @@ async function mostrarModalDetalleOrden(data) {
         </div>
     `;
 
-    // --- Controlar habilitación del botón Guardar Cambios ---
-    const btnGuardar = document.getElementById('btnActualizarOrdenServicio');
+    // --- Campo dinámico para pago restante si está incompleto ---
+    if (data.payment_status === 'partial') {
+        contenedor.innerHTML += `
+            <div class="mt-3" id="pagoRestanteContainer">
+                <label class="fw-semibold text-danger">
+                    <i class="fas fa-hand-holding-dollar me-1"></i> Ingresar pago restante:
+                </label>
+                <input type="number" id="montoRestanteInput" class="form-control" 
+                    min="0" max="${restante}" step="0.01" placeholder="Ejemplo: ${restante.toFixed(2)}">
+                <div class="form-text text-muted">
+                    El monto restante será registrado en caja y cambiará el estado a 'Pagado completo'.
+                </div>
+            </div>
+        `;
 
-        btnGuardar.onclick = async () => {
-            const payload = {
-                order_status_id: document.getElementById('estadoOrdenSelect').value || null,
-                payment_status: document.getElementById('estadoPagoSelect').value,
-                payment_amount: parseFloat(document.getElementById('montoPagadoInput').value) || 0,
-                payment_method_id: document.getElementById('metodoPagoServicioSelect').value || null,
-                payment_submethod_id: document.getElementById('submetodoPagoServicioSelect').value || null,
-                payment_returned: calcularVuelto()
-            };
+            // --- Detectar si el pago restante completa el total ---
+            const montoPagadoInput = document.getElementById('montoPagadoInput');
+            const montoRestanteInput = document.getElementById('montoRestanteInput');
+            const estadoPagoSelect = document.getElementById('estadoPagoSelect');
+            const estadoOrdenSelect = document.getElementById('estadoOrdenSelect');
+            const btnPagoCompleto = document.getElementById('btnPagoCompleto');
 
-            const res = await fetch(`/admin/pos/orden/${data.id}/actualizar`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                },
-                body: JSON.stringify(payload)
+            // Si el usuario ingresa un monto restante
+            montoRestanteInput?.addEventListener('input', () => {
+                const total = parseFloat(data.final_total) || 0;
+                const pagoActual = parseFloat(montoPagadoInput.value) || 0;
+                const restanteNuevo = parseFloat(montoRestanteInput.value) || 0;
+                const suma = pagoActual + restanteNuevo;
+
+                if (suma >= total) {
+                    estadoPagoSelect.value = 'paid';
+                    // Si el estado actual es terminado, lo pasamos a entregado automáticamente
+                    if (estadoOrdenSelect.options.length > 1) {
+                        const entregado = Array.from(estadoOrdenSelect.options).find(
+                            opt => opt.textContent.toLowerCase() === 'entregado'
+                        );
+                        if (entregado) estadoOrdenSelect.value = entregado.value;
+                    }
+
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'Pago completo detectado',
+                        text: 'El monto total ha sido cubierto. La orden se marcará como entregada.',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                } else {
+                    estadoPagoSelect.value = 'partial';
+                }
             });
 
-            const result = await res.json();
+            // Si el usuario presiona el botón “Pago Completo”
+            btnPagoCompleto.addEventListener('click', () => {
+                montoPagadoInput.value = parseFloat(data.final_total).toFixed(2);
+                if (montoRestanteInput) montoRestanteInput.value = '';
+                estadoPagoSelect.value = 'paid';
 
-            if (result.success) {
+                if (estadoOrdenSelect.options.length > 1) {
+                    const entregado = Array.from(estadoOrdenSelect.options).find(
+                        opt => opt.textContent.toLowerCase() === 'entregado'
+                    );
+                    if (entregado) estadoOrdenSelect.value = entregado.value;
+                }
+
                 Swal.fire({
-                    title: 'Éxito',
-                    text: result.message,
                     icon: 'success',
-                    timer: 1500,
+                    title: 'Pago completado',
+                    text: 'El monto total ha sido cubierto y la orden será marcada como entregada.',
+                    timer: 1800,
                     showConfirmButton: false
-                }).then(() => {
-                    modal.hide();
-                    location.reload();
                 });
-            } else {
-                Swal.fire('Error', result.message, 'error');
-            }
-        };
+            });
+    }
 
-    // --- Función auxiliar para calcular vuelto ---
+    // --- Función auxiliar ---
     function calcularVuelto() {
         const monto = parseFloat(document.getElementById('montoPagadoInput').value) || 0;
         const total = parseFloat(data.final_total) || 0;
         return Math.max(0, monto - total);
     }
 
-    const estadoOrdenSelect = document.getElementById('estadoOrdenSelect');
-
-    // Solo permitir guardar si está terminado
+    // --- Guardar cambios ---
+    const btnGuardar = document.getElementById('btnActualizarOrdenServicio');
     btnGuardar.disabled = estadoActual !== 'terminado';
+    btnGuardar.onclick = async () => {
+        const montoPagadoActual = parseFloat(document.getElementById('montoPagadoInput').value) || 0;
+        const montoRestante = parseFloat(document.getElementById('montoRestanteInput')?.value) || 0;
+        const nuevoPagoTotal = montoPagadoActual + montoRestante;
 
-    // Escuchar cambios: permitir solo pasar de Terminado a Entregado
+        const payload = {
+            order_status_id: document.getElementById('estadoOrdenSelect').value || null,
+            payment_status: document.getElementById('estadoPagoSelect').value,
+            payment_amount: nuevoPagoTotal,
+            payment_method_id: document.getElementById('metodoPagoServicioSelect').value || null,
+            payment_submethod_id: document.getElementById('submetodoPagoServicioSelect').value || null,
+            payment_returned: calcularVuelto(),
+            remaining_payment: parseFloat(document.getElementById('montoRestanteInput')?.value) || 0
+        };
+
+        const res = await fetch(`/admin/pos/orden/${data.id}/actualizar`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const result = await res.json();
+        if (result.success) {
+            Swal.fire({
+                title: 'Éxito',
+                text: result.message,
+                icon: 'success',
+                timer: 1500,
+                showConfirmButton: false
+            }).then(() => {
+                modal.hide();
+                location.reload();
+            });
+        } else {
+            Swal.fire('Error', result.message, 'error');
+        }
+    };
+
+    // --- Control de estados ---
+    const estadoOrdenSelect = document.getElementById('estadoOrdenSelect');
     if (estadoActual === 'terminado') {
-        estadoOrdenSelect.addEventListener('change', (e) => {
-            const textoEstado = e.target.options[e.target.selectedIndex].text.trim().toLowerCase();
-            btnGuardar.disabled = textoEstado !== 'entregado';
+        estadoOrdenSelect.addEventListener('change', e => {
+            const texto = e.target.options[e.target.selectedIndex].text.trim().toLowerCase();
+            btnGuardar.disabled = texto !== 'entregado';
         });
     }
 
-    // --- Evento: actualizar submétodos dinámicamente ---
-    document.getElementById('metodoPagoServicioSelect').addEventListener('change', (e) => {
+    // --- Submétodos dinámicos ---
+    document.getElementById('metodoPagoServicioSelect').addEventListener('change', e => {
         const metodoSeleccionado = metodos.find(m => m.id == e.target.value);
         const subSelect = document.getElementById('submetodoPagoServicioSelect');
         subSelect.innerHTML = metodoSeleccionado
@@ -781,83 +857,27 @@ async function mostrarModalDetalleOrden(data) {
             : '<option value="">-- Sin submétodos --</option>';
     });
 
-    // Mostrar el modal
+    // --- Actualización dinámica de montos ---
     const modal = new bootstrap.Modal(document.getElementById('modalDetalleOrdenServicio'));
-
-    // Evento: actualizar cálculos dinámicos del monto pagado ---
     const inputMontoPagado = document.getElementById('montoPagadoInput');
     const estadoPagoSelect = document.getElementById('estadoPagoSelect');
     const btnPagoCompleto = document.getElementById('btnPagoCompleto');
 
-    if (btnPagoCompleto && inputMontoPagado) {
+    if (btnPagoCompleto) {
         btnPagoCompleto.addEventListener('click', () => {
             inputMontoPagado.value = Number(data.final_total || 0).toFixed(2);
             inputMontoPagado.dispatchEvent(new Event('input'));
         });
     }
 
-    if (inputMontoPagado) {
-        inputMontoPagado.addEventListener('input', () => {
-            const monto = parseFloat(inputMontoPagado.value) || 0;
-            const total = parseFloat(data.final_total) || 0;
+    inputMontoPagado.addEventListener('input', () => {
+        const monto = parseFloat(inputMontoPagado.value) || 0;
+        const total = parseFloat(data.final_total) || 0;
 
-            const restante = Math.max(0, total - monto);
-            const vuelto = Math.max(0, monto - total);
-
-            const restanteSpan = contenedor.querySelector('.text-danger span:last-child');
-            const vueltoSpan = contenedor.querySelector('.text-success span:last-child');
-
-            if (restanteSpan) restanteSpan.textContent = `S/ ${restante.toFixed(2)}`;
-            if (vueltoSpan) vueltoSpan.textContent = `S/ ${vuelto.toFixed(2)}`;
-
-            // Cambiar estado de pago automáticamente
-            if (monto === 0) {
-                estadoPagoSelect.value = 'pending';
-            } else if (monto < total) {
-                estadoPagoSelect.value = 'partial'; 
-            } else {
-                estadoPagoSelect.value = 'paid';
-            }
-
-            // Mensaje informativo dinámico
-            let mensaje = '';
-            let color = '';
-
-            if (monto === 0) {
-                mensaje = 'Sin pago registrado.';
-                color = 'text-secondary';
-            } else if (monto < total) {
-                mensaje = `Falta pagar S/ ${(total - monto).toFixed(2)}.`;
-                color = 'text-danger';
-            } else if (monto === total) {
-                mensaje = 'Pago exacto.';
-                color = 'text-success';
-            } else {
-                mensaje = `Pago excedente. Vuelto: S/ ${(monto - total).toFixed(2)}.`;
-                color = 'text-primary';
-            }
-
-            // Mostrar mensaje dinámico debajo del campo de monto
-            let mensajeDiv = document.getElementById('mensajePagoInfo');
-            if (!mensajeDiv) {
-                mensajeDiv = document.createElement('div');
-                mensajeDiv.id = 'mensajePagoInfo';
-                mensajeDiv.classList.add('mt-2', 'fw-semibold');
-
-                // Insertar justo DESPUÉS del bloque que contiene el input y el botón
-                const contenedorInput = inputMontoPagado.closest('.mt-4');
-                if (contenedorInput) {
-                    contenedorInput.appendChild(mensajeDiv);
-                } else {
-                    inputMontoPagado.parentNode.after(mensajeDiv); 
-                }
-            }
-
-            mensajeDiv.textContent = mensaje;
-            mensajeDiv.className = `mt-2 fw-semibold ${color}`;
-
-        });
-    }
+        if (monto === 0) estadoPagoSelect.value = 'pending';
+        else if (monto < total) estadoPagoSelect.value = 'partial';
+        else estadoPagoSelect.value = 'paid';
+    });
 
     modal.show();
 }

@@ -123,6 +123,10 @@
           <li class="nav-item"><a class="nav-link" href="#productos">Productos</a></li>
           <li class="nav-item"><a class="nav-link" href="#comentarios">Opiniones</a></li>
           <li class="nav-item"><a class="nav-link" href="#contacto">Contacto</a></li>
+          <!-- Botón de login -->
+          <li class="nav-item">
+            <a class="btn btn-primary" href="{{ route('login') }}" role="button">Iniciar sesión</a>
+          </li>
         </ul>
       </div>
     </div>

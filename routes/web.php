@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 
+use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\CashRegisterController;
 use App\Http\Controllers\Admin\SaleController;
 use App\Http\Controllers\Admin\ComplementaryProductCategoryController;
@@ -32,17 +33,12 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // Ruta protegida /dashboard
 Route::middleware('auth')->group(function () {
-    Route::get('/dashboard', function () {
-        return view('admin.dashboard');
-    })->name('dashboard');
 
     // Admin
     Route::prefix('admin')->name('admin.')->group(function () {
 
         // Dasboard
-        Route::get('/dashboard', function () {
-            return view('admin.dashboard');
-        })->name('dashboard');
+        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
         // Users
         Route::prefix('users')->name('users.')->group(function () {
@@ -183,10 +179,6 @@ Route::middleware('auth')->group(function () {
             // Guardar cambios de la orden de servicio
             Route::post('/orden/{id}/actualizar', [PosController::class, 'actualizarOrden'])->name('actualizar.orden');
             Route::get('/order-statuses', [PosController::class, 'obtenerEstadosPedido']);
-
-
-            //Route::get('/orden-detalle/{id}', [PosController::class, 'detalleOrden'])->name('ordenDetalle');
-            //Route::post('/guardar-orden', [PosController::class, 'guardarOrden'])->name('guardarOrden');
         });
 
         Route::prefix('cash')->name('cash.')->group(function () {

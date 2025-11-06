@@ -10,6 +10,8 @@ use App\Models\Service;
 use App\Models\PaymentMethod;
 use App\Models\Order;
 use App\Models\OrderStatus;
+use App\Models\CashRegister;
+use App\Models\CashMovement;
 use Illuminate\Support\Facades\Auth; 
 use Illuminate\Support\Facades\DB;
 
@@ -64,6 +66,7 @@ class PosController extends Controller
             'id' => $order->id,
             'order_number' => $order->order_number,
             'customer_id' => $order->customer_id, 
+            'delivered_by' => $order->deliveredBy ? $order->deliveredBy->full_name : null,
             'customer_name' => $order->customer->full_name ?? 'Cliente desconocido',
             'order_status' => $order->status->name ?? 'Sin estado',
             'payment_status' => $order->payment_status ?? 'pendiente',
@@ -167,22 +170,73 @@ class PosController extends Controller
                 'payment_method_id' => 'nullable|exists:payment_methods,id',
                 'payment_submethod_id' => 'nullable|exists:payment_submethods,id',
                 'payment_returned' => 'nullable|numeric|min:0',
+                'remaining_payment' => 'nullable|numeric|min:0',
             ]);
 
+            $montoAnterior = $order->payment_amount ?? 0;
+            $montoNuevo = $validated['payment_amount'];
+            $montoFinal = $order->final_total;
+            $montoAdicional = max(0, $montoNuevo - $montoAnterior);
+
+            // Si se envió pago restante manual (cuando estaba parcial)
+            if (!empty($validated['remaining_payment'])) {
+                $montoAdicional = $validated['remaining_payment'];
+                $montoNuevo = $montoAnterior + $montoAdicional;
+            }
+
+            // Si el nuevo monto cubre el total -> marcar como pagado y entregado
+            $nuevoEstadoPago = $montoNuevo >= $montoFinal ? 'paid' : $validated['payment_status'];
+            $nuevoEstadoOrden = $nuevoEstadoPago === 'paid' ? 'entregado' : 'terminado';
+
+            // Actualizar orden
             $order->update([
                 'order_status_id' => $validated['order_status_id'] ?? $order->order_status_id,
-                'payment_status' => $validated['payment_status'],
-                'payment_amount' => $validated['payment_amount'],
-                'payment_method_id' => $validated['payment_method_id'],
-                'payment_submethod_id' => $validated['payment_submethod_id'],
+                'payment_status' => $nuevoEstadoPago,
+                'payment_amount' => $montoNuevo,
+                'payment_method_id' => $validated['payment_method_id'] ?? $order->payment_method_id,
+                'payment_submethod_id' => $validated['payment_submethod_id'] ?? $order->payment_submethod_id,
                 'payment_returned' => $validated['payment_returned'] ?? 0,
             ]);
+
+            // Si hay pago adicional, registrar movimiento en caja
+            if ($montoAdicional > 0) {
+                $cashRegister = CashRegister::where('status', 'open')
+                    ->where('user_id', Auth::id())
+                    ->first();
+
+                if ($cashRegister) {
+                    CashMovement::create([
+                        'cash_register_id' => $cashRegister->id,
+                        'user_id' => Auth::id(),
+                        'type' => 'income',
+                        'amount' => $montoAdicional,
+                        'concept' => $nuevoEstadoPago === 'paid'
+                            ? "Pago final y entrega de orden {$order->order_number}"
+                            : "Pago parcial de orden {$order->order_number}",
+                        'movement_date' => now(),
+                    ]);
+
+                    $cashRegister->increment('total_sales', $montoAdicional);
+                }
+            }
+
+            // Si ya está pagada completamente, marcar quién la entregó
+            if ($nuevoEstadoPago === 'paid') {
+                $order->update([
+                    'delivered_by' => Auth::id(),
+                ]);
+            }
 
             DB::commit();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Orden de servicio actualizada correctamente.'
+                'message' => match ($nuevoEstadoPago) {
+                    'pending' => 'Orden actualizada. Sin registro en caja.',
+                    'partial' => 'Pago parcial actualizado correctamente.',
+                    'paid' => 'Pago completo realizado y orden entregada.',
+                    default => 'Orden actualizada correctamente.',
+                }
             ]);
 
         } catch (\Exception $e) {
@@ -206,7 +260,4 @@ class PosController extends Controller
         $methods = PaymentMethod::with('submethods:id,payment_method_id,name')->get(['id', 'name']);
         return response()->json($methods);
     }
-
-
-
 }

@@ -14,6 +14,7 @@ class Order extends Model
         'customer_id',
         'employee_id',
         'branch_id',
+        'delivered_by',
         'total_amount',
         'discount',
         'tax',
@@ -78,4 +79,10 @@ class Order extends Model
     {
         return $this->hasMany(OrderDetail::class);
     }
+
+    public function deliveredBy()
+    {
+        return $this->belongsTo(User::class, 'delivered_by');
+    }
+
 }

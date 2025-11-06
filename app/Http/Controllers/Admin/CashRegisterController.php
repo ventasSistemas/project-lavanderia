@@ -18,23 +18,23 @@ class CashRegisterController extends Controller
         $user = Auth::user();
         $roleName = $user->role->name ?? 'sin_rol';
 
-        // 🔹 Traer todas las cajas según el rol
+        // Traer todas las cajas según el rol
         if ($roleName === 'admin') {
             $cashRegisters = CashRegister::with(['user.role', 'branch', 'movements' => function ($q) {
-                $q->orderBy('movement_date', 'asc');
+                $q->orderBy('movement_date', 'desc');
             }])
             ->orderByDesc('opened_at')
             ->get();
         } elseif ($roleName === 'manager') {
             $cashRegisters = CashRegister::with(['user.role', 'branch', 'movements' => function ($q) {
-                $q->orderBy('movement_date', 'asc');
+                $q->orderBy('movement_date', 'desc');
             }])
             ->where('branch_id', $user->branch_id)
             ->orderByDesc('opened_at')
             ->get();
         } else {
             $cashRegisters = CashRegister::with(['user.role', 'branch', 'movements' => function ($q) {
-                $q->orderBy('movement_date', 'asc');
+                $q->orderBy('movement_date', 'desc');
             }])
             ->where('user_id', $user->id)
             ->orderByDesc('opened_at')

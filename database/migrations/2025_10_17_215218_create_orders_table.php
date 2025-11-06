@@ -19,6 +19,7 @@ return new class extends Migration
             $table->foreignId('branch_id')->constrained('branches')->onDelete('cascade');
             $table->foreignId('payment_method_id')->nullable()->constrained('payment_methods')->nullOnDelete();
             $table->foreignId('payment_submethod_id')->nullable()->constrained('payment_submethods')->nullOnDelete();
+            $table->foreignId('delivered_by')->nullable()->constrained('users')->after('employee_id');
             $table->decimal('total_amount', 10, 2)->default(0);
             $table->decimal('discount', 10, 2)->default(0);
             $table->decimal('tax', 10, 2)->default(0);

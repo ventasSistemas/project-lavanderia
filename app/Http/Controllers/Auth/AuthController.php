@@ -29,7 +29,7 @@ class AuthController extends Controller
             'password' => ['required', 'string', Password::min(8)->mixedCase()->numbers()->symbols()],
             'phone' => 'nullable|string|max:9',
             'address' => 'nullable|string',
-            'role_id' => 'required|exists:roles,id',  // Asegurarse de que el rol exista
+            'role_id' => 'required|exists:roles,id',  
             'branch_id' => 'nullable|exists:branches,id',
         ]);
 
@@ -46,7 +46,7 @@ class AuthController extends Controller
             'address' => $request->address,
             'role_id' => $request->role_id,
             'branch_id' => $request->branch_id,
-            'status' => 'active',  // Puedes cambiar la lógica del estado según sea necesario
+            'status' => 'active',  
         ]);
 
         // Redirigir al login con mensaje de éxito
@@ -64,7 +64,7 @@ class AuthController extends Controller
 
         // Intentar autenticar al usuario
         if (Auth::attempt(['email' => $request->email, 'password' => $request->password], $request->filled('remember'))) {
-            return redirect()->intended('/dashboard'); // Redirigir al dashboard si se autentica correctamente
+            return redirect()->intended('admin/dashboard');
         }
 
         // Si las credenciales son incorrectas

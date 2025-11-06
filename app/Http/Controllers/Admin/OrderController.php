@@ -14,6 +14,7 @@ use App\Models\OrderStatus;
 use App\Models\PaymentMethod;   
 use App\Models\CashMovement;   
 use App\Models\CashRegister;   
+use App\Models\OrderNotification;   
 use App\Models\PaymentSubmethod;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -164,40 +165,26 @@ class OrderController extends Controller
 
             // Registrar movimiento en caja si hay pago
             if ($paymentAmount > 0) {
-                // Buscar la caja abierta del usuario
                 $cashRegister = CashRegister::where('user_id', Auth::id())
                     ->where('status', 'open')
                     ->first();
 
                 if ($cashRegister) {
-                    // Registrar el movimiento de venta
+                    // Monto real que entra a caja (ya sin contar el vuelto)
+                    $realAmount = $paymentAmount - $paymentReturned;
+
+                    // Solo registrar la venta neta (sin mostrar el vuelto como egreso)
                     CashMovement::create([
                         'cash_register_id' => $cashRegister->id,
                         'user_id' => Auth::id(),
                         'type' => 'sale',
-                        'amount' => $paymentAmount,
+                        'amount' => $realAmount,
                         'concept' => "Venta - Orden {$orderNumber}",
                         'movement_date' => now(),
                     ]);
 
-                    // Actualizar totales de la caja
-                    $cashRegister->increment('total_sales', $paymentAmount);
-
-                    // Si hay vuelto, registrar también un egreso
-                    if ($paymentReturned > 0) {
-                        CashMovement::create([
-                            'cash_register_id' => $cashRegister->id,
-                            'user_id' => Auth::id(),
-                            'type' => 'expense',
-                            'amount' => $paymentReturned,
-                            'concept' => "Vuelto - Orden {$orderNumber}",
-                            'movement_date' => now(),
-                        ]);
-
-                        // Restar el vuelto al total de egresos
-                        $cashRegister->increment('total_expense', $paymentReturned);
-                    }
-
+                    // Actualizar el total de ventas en caja solo con el neto
+                    $cashRegister->increment('total_sales', $realAmount);
                 }
             }
 
@@ -262,12 +249,12 @@ class OrderController extends Controller
 
                 // Si pasa a TERMINADO, crear notificación para admin y manager
                 if ($newStatusName === 'terminado') {
-                    $admins = \App\Models\User::whereHas('role', fn($q) => 
+                    $admins = User::whereHas('role', fn($q) => 
                         $q->whereIn('name', ['Admin', 'Manager'])
                     )->get();
 
                     foreach ($admins as $user) {
-                        \App\Models\OrderNotification::create([
+                        OrderNotification::create([
                             'order_id' => $order->id,
                             'user_id' => $user->id,
                             'message' => "El pedido #{$order->order_number} de {$order->customer->full_name} está terminado.",
@@ -338,8 +325,6 @@ class OrderController extends Controller
             'order_status_id' => 'required|exists:order_status,id', 
             'payment_method_id' => 'required|exists:payment_methods,id',
             'payment_status' => 'required|in:pending,paid,partial',
-            //'payment_method_id' => 'nullable|exists:payment_methods,id',
-            //'payment_submethod_id' => 'nullable|exists:payment_submethods,id',
             'delivery_date' => 'nullable|date|after_or_equal:receipt_date',
             'discount' => 'nullable|numeric|min:0',
             'tax' => 'nullable|numeric|min:0',

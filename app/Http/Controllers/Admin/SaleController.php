@@ -7,6 +7,9 @@ use Illuminate\Http\Request;
 use App\Models\Sale;
 use App\Models\SaleDetail;
 use App\Models\PaymentMethod;
+use App\Models\CashMovement;
+use App\Models\CashRegister;
+use Illuminate\Support\Facades\Auth; 
 use Illuminate\Support\Facades\DB;
 
 class SaleController extends Controller
@@ -19,7 +22,17 @@ class SaleController extends Controller
     public function store(Request $request)
     {
         DB::beginTransaction();
+
         try {
+            // Verificar si el usuario tiene caja abierta
+                $cashRegister = CashRegister::where('user_id', Auth::id())
+                    ->where('status', 'open')
+                    ->first();
+
+            if (!$cashRegister) {
+                return response()->json(['error' => 'No tienes una caja abierta.'], 400);
+            }
+
             // Generar número de orden automáticamente
             $lastSale = Sale::latest('id')->first();
             $nextNumber = $lastSale ? intval(substr($lastSale->order_number, 4)) + 1 : 1;
@@ -41,6 +54,7 @@ class SaleController extends Controller
                 'items.*.precio' => 'required|numeric|min:0',
             ]);
 
+            // Crear la venta
             $sale = Sale::create([
                 'order_number' => $orderNumber,
                 'sale_date' => $data['sale_date'],
@@ -64,7 +78,21 @@ class SaleController extends Controller
                 ]);
             }
 
+            // Registrar movimiento en caja
+            CashMovement::create([
+                'cash_register_id' => $cashRegister->id,
+                'user_id' => Auth::id(),
+                'type' => 'sale',
+                'amount' => $sale->total,
+                'concept' => "Venta #{$orderNumber}",
+                'movement_date' => now(),
+            ]);
+
+            // Actualizar totales de la caja
+            $cashRegister->increment('total_sales', $sale->total);
+
             DB::commit();
+
             return response()->json([
                 'message' => 'Venta registrada correctamente',
                 'order_number' => $orderNumber
