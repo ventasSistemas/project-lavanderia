@@ -19,10 +19,27 @@ class Sale extends Model
         'amount_received',
         'change_given',
         'payment_method_id',
-        'payment_submethod_id'
+        'payment_submethod_id',
+        'branch_id',
+        'employee_id',
     ];
 
     public function method()
+    {
+        return $this->belongsTo(PaymentMethod::class, 'payment_method_id');
+    }
+
+    public function employee()
+    {
+        return $this->belongsTo(User::class, 'employee_id');
+    }
+
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class);
+    }
+
+    public function paymentMethod()
     {
         return $this->belongsTo(PaymentMethod::class, 'payment_method_id');
     }

@@ -95,7 +95,7 @@
             </a>
         </li>-->
         <li>
-            <a href="#" class="nav-link {{ request()->routeIs('admin.reporte.ventas') ? 'active' : '' }}">
+            <a href="{{ route('admin.reports.ventas') }}" class="nav-link {{ request()->routeIs('admin.reports.ventas') ? 'active' : '' }}">
                 <i class="fa-solid fa-chart-column me-2"></i> Reporte de Ventas
             </a>
         </li>

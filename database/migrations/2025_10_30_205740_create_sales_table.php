@@ -23,6 +23,8 @@ return new class extends Migration
             $table->decimal('change_given', 10, 2)->nullable(); // vuelto
             $table->foreignId('payment_method_id')->nullable()->constrained('payment_methods')->nullOnDelete();
             $table->foreignId('payment_submethod_id')->nullable()->constrained('payment_submethods')->nullOnDelete();
+            $table->foreignId('branch_id')->nullable()->constrained('branches')->nullOnDelete();
+            $table->foreignId('employee_id')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
         });
     }

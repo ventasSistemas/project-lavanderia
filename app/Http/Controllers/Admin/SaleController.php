@@ -66,6 +66,8 @@ class SaleController extends Controller
                 'change_given' => $data['change_given'] ?? null,
                 'payment_method_id' => $data['payment_method_id'] ?? null,
                 'payment_submethod_id' => $data['payment_submethod_id'] ?? null,
+                'branch_id' => Auth::user()->branch_id ?? null, 
+                'employee_id' => Auth::id(), 
             ]);
 
             foreach ($data['items'] as $item) {

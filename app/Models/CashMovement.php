@@ -33,4 +33,9 @@ class CashMovement extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    public function order()
+    {
+        return $this->belongsTo(\App\Models\Order::class, 'order_id');
+    }
 }

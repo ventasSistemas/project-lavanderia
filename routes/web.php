@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 
+use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\CashRegisterController;
 use App\Http\Controllers\Admin\SaleController;
@@ -187,7 +188,10 @@ Route::middleware('auth')->group(function () {
             Route::post('/movement', [CashRegisterController::class, 'movement'])->name('movement');
             Route::post('/close', [CashRegisterController::class, 'close'])->name('close');
         });
-        
+
+        Route::prefix('reports')->name('reports.')->group(function () {
+            Route::get('/ventas', [ReportController::class, 'ventas'])->name('ventas');
+        });
     });
 
 });
