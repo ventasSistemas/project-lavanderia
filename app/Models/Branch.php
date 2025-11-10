@@ -20,6 +20,7 @@ class Branch extends Model
         'status',
         'schedule',
         'is_open',
+        'code_letter'
     ];
 
     protected $casts = [

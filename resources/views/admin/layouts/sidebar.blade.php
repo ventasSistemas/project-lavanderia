@@ -29,17 +29,6 @@
 
         <!-- Ordenes -->
         <li class="section-title mt-3">Órdenes</li>
-        <!--
-        <li>
-            <a href="{{ route('admin.order-status.index') }}" class="nav-link {{ request()->routeIs('admin.order-status.index') ? 'active' : '' }}">
-                <i class="fa-solid fa-layer-group me-2"></i> Estados
-            </a>
-        </li>-->
-        <li>
-            <a href="{{ route('admin.payment-methods.index') }}" class="nav-link {{ request()->routeIs('admin.payment-methods.index') ? 'active' : '' }}">
-                <i class="fa-solid fa-credit-card me-2"></i>  Metodos de Pago
-            </a>
-        </li>
         <li>
             <a href="{{ route('admin.orders.index') }}" class="nav-link {{ request()->routeIs('admin.orders.index') ? 'active' : '' }}">
                 <i class="fa-solid fa-box me-2"></i> Registrar Orden
@@ -60,6 +49,10 @@
         </li>
 
         <!-- Servicios -->
+        @php
+            $role = Auth::user()->role->name ?? null;
+        @endphp
+        @if($role !== 'employee')
         <li class="section-title mt-3">Servicios</li>
         <li>
             <a href="{{ route('admin.services.index') }}" class="nav-link {{ request()->routeIs('admin.services.index') ? 'active' : '' }}">
@@ -71,70 +64,51 @@
                 <i class="fa-solid fa-dumpster-fire"></i> Prodctos Complement.
             </a>
         </li>
-
-        <!-- Gastos -->
-        <li class="section-title mt-3">Gastos</li>
-        <li>
-            <a href="#" class="nav-link {{ request()->routeIs('admin.gastos') ? 'active' : '' }}">
-                <i class="fa-solid fa-money-bill-wave me-2"></i> Lista de Gastos
-            </a>
-        </li>
+        @endif
 
         <!-- Informes -->
-        <li class="section-title mt-3">Informes</li>
-        <!--
-        <li>
-            <a href="#" class="nav-link {{ request()->routeIs('admin.reporte.diario') ? 'active' : '' }}">
-                <i class="fa-solid fa-calendar-day me-2"></i> Reporte Diario
-            </a>
-        </li>-->
-        <!--
-        <li>
-            <a href="#" class="nav-link {{ request()->routeIs('admin.informe.pedido') ? 'active' : '' }}">
-                <i class="fa-solid fa-file-lines me-2"></i> Informe de Pedido
-            </a>
-        </li>-->
-        <li>
-            <a href="{{ route('admin.reports.ventas') }}" class="nav-link {{ request()->routeIs('admin.reports.ventas') ? 'active' : '' }}">
-                <i class="fa-solid fa-chart-column me-2"></i> Reporte de Ventas
-            </a>
-        </li>
-        <!--
-        <li>
-            <a href="#" class="nav-link {{ request()->routeIs('admin.informe.gastos') ? 'active' : '' }}">
-                <i class="fa-solid fa-wallet me-2"></i> Informe de Gastos
-            </a>
-        </li>-->
+        @php
+            $role = Auth::user()->role->name ?? null;
+        @endphp
+        @if($role !== 'employee')
+        <li class="section-title mt-3">Informes</li>  
+            <li>
+                <a href="{{ route('admin.reports.ventas') }}" class="nav-link {{ request()->routeIs('admin.reports.ventas') ? 'active' : '' }}">
+                    <i class="fa-solid fa-chart-column me-2"></i> Reporte de Ventas
+                </a> 
+            </li>
+        @endif
 
         <!-- Configuración -->
         <li class="section-title mt-3">Configuración</li>
-        <li>
-            <a href="{{ route('admin.users.index') }}" class="nav-link {{ request()->routeIs('admin.users.index') ? 'active' : '' }}">
-                <i class="fa-solid fa-user-tie me-2"></i> Personales
-            </a>
-        </li>
-        <li>
-            <a href="{{ route('admin.branches.index') }}" class="nav-link {{ request()->routeIs('admin.branches.index') ? 'active' : '' }}">
-                <i class="fa-solid fa-building me-2"></i> Sucursales
-            </a>
-        </li>
-        
-        <li>
-            <a href="{{ route('admin.cash.index') }}" class="nav-link {{ request()->routeIs('admin.cash.index') ? 'active' : '' }}">
-                <i class="fa-solid fa-boxes-stacked me-2"></i> Caja
-            </a>
-        </li>
+            @php
+                $role = Auth::user()->role->name ?? null;
+            @endphp
 
-        <!-- Cerrar sesión -->
-        <hr class="text-white mt-4">
-        <div class="bg-light p-2 rounded">
-            <form action="{{ route('logout') }}" method="POST">
-                @csrf
-                <button class="dropdown-item text-danger">
-                    <i class="fa-solid fa-right-from-bracket me-2"></i> Cerrar sesión
-                </button>
-            </form>
-        </div>
+            {{-- Mostrar solo si NO es empleado --}}
+            @if($role !== 'employee')
+                <li>
+                    <a href="{{ route('admin.users.index') }}" class="nav-link {{ request()->routeIs('admin.users.index') ? 'active' : '' }}">
+                        <i class="fa-solid fa-user-tie me-2"></i> Personales
+                    </a>
+                </li>
+
+                <li>
+                    <a href="{{ route('admin.branches.index') }}" class="nav-link {{ request()->routeIs('admin.branches.index') ? 'active' : '' }}">
+                        <i class="fa-solid fa-building me-2"></i> Sucursales
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('admin.payment-methods.index') }}" class="nav-link {{ request()->routeIs('admin.payment-methods.index') ? 'active' : '' }}">
+                        <i class="fa-solid fa-credit-card me-2"></i>  Metodos de Pago
+                    </a>
+                </li>
+            @endif
+            <li>
+                <a href="{{ route('admin.cash.index') }}" class="nav-link {{ request()->routeIs('admin.cash.index') ? 'active' : '' }}">
+                    <i class="fa-solid fa-boxes-stacked me-2"></i> Caja
+                </a>
+            </li>
     </ul>
 </div>
 

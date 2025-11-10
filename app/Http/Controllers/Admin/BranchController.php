@@ -66,12 +66,11 @@ class BranchController extends Controller
         return $schedule;
     }
 
-    /**
+    /** 
      * Crear nueva sucursal (solo admin)
      */
     public function store(Request $request)
     {
-
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:120',
             'address' => 'required|string',
@@ -89,7 +88,12 @@ class BranchController extends Controller
             return redirect()->back()->withErrors($validator)->withInput();
         }
 
-        // Dentro del método store
+        // Generar la letra automáticamente según cantidad de sucursales
+        $count = Branch::count();
+        $letters = range('A', 'Z');
+        $nextLetter = $letters[$count] ?? chr(65 + ($count % 26)); // Si pasa de Z, vuelve a usar letras de nuevo
+
+        // Crear la sucursal
         $branch = Branch::create([
             'name' => $request->name,
             'address' => $request->address,
@@ -101,6 +105,7 @@ class BranchController extends Controller
             'status' => $request->status,
             'schedule' => $this->processSchedule($request),
             'is_open' => $request->is_open ?? false,
+            'code_letter' => $nextLetter,
         ]);
 
         // Asignar encargado (subadmin)
@@ -116,7 +121,7 @@ class BranchController extends Controller
         }
 
         return redirect()->route('admin.branches.index')
-            ->with('success', 'Sucursal creada correctamente.');
+            ->with('success', 'Sucursal creada correctamente con código '.$nextLetter);
     }
 
     /**

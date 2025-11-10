@@ -3,12 +3,16 @@
 @section('content')
 <div class="container py-4">
 
-    {{-- Título principal --}}
+    <!-- Encabezado -->
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="fw-bold text-primary mb-0">
-            <i class="bi bi-cash-stack me-2"></i> Módulo de Caja
-        </h2>
-        <small class="text-muted">{{ now()->format('d/m/Y') }}</small>
+        <div>
+            <h4 class="fw-semibold text-dark mb-1">
+                <i class="fa-solid fa-user-tie text-primary me-2"></i> Gestión de Caja
+            </h4>
+            <p class="text-muted small mb-0">
+                Administra los movimientos de caja, registra ingresos y egresos, y controla el balance diario para mantener un seguimiento financiero preciso.
+            </p>
+        </div>
     </div>
 
     {{-- Mensaje de éxito --}}
@@ -227,17 +231,17 @@
 @endsection
 
 <style>
-.mini-card {
-    transition: transform 0.2s ease;
-}
-.mini-card:hover {
-    transform: scale(1.03);
-}
-.accordion-button {
-    background-color: #f8f9fa !important;
-    font-weight: 600;
-}
-.accordion-button:not(.collapsed) {
-    background-color: #e9ecef !important;
-}
+    .mini-card {
+        transition: transform 0.2s ease;
+    }
+    .mini-card:hover {
+        transform: scale(1.03);
+    }
+    .accordion-button {
+        background-color: #f8f9fa !important;
+        font-weight: 600;
+    }
+    .accordion-button:not(.collapsed) {
+        background-color: #e9ecef !important;
+    }
 </style>

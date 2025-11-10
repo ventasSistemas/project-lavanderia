@@ -41,19 +41,25 @@ Route::middleware('auth')->group(function () {
         // Dasboard
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-        // Users
-        Route::prefix('users')->name('users.')->group(function () {
-            Route::get('/', [UserController::class, 'index'])->name('index');
-            Route::post('/store', [UserController::class, 'store'])->name('store');
-            Route::put('/update/{user}', [UserController::class, 'update'])->name('update');
-        });
+        // Users (solo admin y manager pueden acceder)
+        Route::prefix('users')
+            ->name('users.')
+            ->middleware('role:admin,manager,subadmin')
+            ->group(function () {
+                Route::get('/', [UserController::class, 'index'])->name('index');
+                Route::post('/store', [UserController::class, 'store'])->name('store');
+                Route::put('/update/{user}', [UserController::class, 'update'])->name('update');
+            });
 
-        // Branch
-        Route::prefix('branches')->name('branches.')->group(function () {
-            Route::get('/', [BranchController::class, 'index'])->name('index');
-            Route::post('/store', [BranchController::class, 'store'])->name('store');
-            Route::put('/update/{branch}', [BranchController::class, 'update'])->name('update');
-        });
+        // Branches (solo admin, manager y subadmin pueden acceder)
+        Route::prefix('branches')
+            ->name('branches.')
+            ->middleware('role:admin,manager,subadmin')
+            ->group(function () {
+                Route::get('/', [BranchController::class, 'index'])->name('index');
+                Route::post('/store', [BranchController::class, 'store'])->name('store');
+                Route::put('/update/{branch}', [BranchController::class, 'update'])->name('update');
+            });
 
         // Customers
         Route::prefix('customers')->name('customers.')->group(function () {
@@ -112,12 +118,12 @@ Route::middleware('auth')->group(function () {
             Route::get('/edit/{order}', [OrderController::class, 'edit'])->name('edit');
             Route::put('/update/{order}', [OrderController::class, 'update'])->name('update');
             Route::delete('/delete/{order}', [OrderController::class, 'destroy'])->name('destroy');
+            Route::get('/next-order-number', [OrderController::class, 'nextOrderNumber']);
             //Ticket
             Route::get('/ticket/{id}', [TicketController::class, 'show'])->name('ticket');
             //Llevar Lavanaderia / Estados
             Route::post('/change-status', [OrderController::class, 'changeStatus'])->name('changeStatus');
             Route::get('/change-status', [OrderController::class, 'changeStatusView'])->name('changeStatus.view');
-
         });
 
         // Order Items
@@ -189,9 +195,14 @@ Route::middleware('auth')->group(function () {
             Route::post('/close', [CashRegisterController::class, 'close'])->name('close');
         });
 
-        Route::prefix('reports')->name('reports.')->group(function () {
-            Route::get('/ventas', [ReportController::class, 'ventas'])->name('ventas');
-        });
+        // Users (solo admin y manager pueden acceder)
+        Route::prefix('reports')->name('reports.')
+            ->middleware('role:admin,manager,subadmin')
+            ->group(function () {
+                Route::get('/ventas', [ReportController::class, 'ventas'])->name('ventas');
+                Route::get('/buscar-sucursales', [ReportController::class, 'buscarSucursales'])->name('buscarSucursales');
+                Route::get('/buscar-empleados', [ReportController::class, 'buscarEmpleados'])->name('buscarEmpleados');
+            });
     });
 
 });

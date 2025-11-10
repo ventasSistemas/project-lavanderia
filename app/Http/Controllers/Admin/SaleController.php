@@ -19,25 +19,39 @@ class SaleController extends Controller
         $methods = PaymentMethod::with('submethods')->get();
         return response()->json($methods);
     }
+
+    /** 
+     * Registrar nueva venta de productos
+     */
     public function store(Request $request)
     {
         DB::beginTransaction();
 
         try {
-            // Verificar si el usuario tiene caja abierta
-                $cashRegister = CashRegister::where('user_id', Auth::id())
-                    ->where('status', 'open')
-                    ->first();
+            // Verificar caja abierta
+            $cashRegister = CashRegister::where('user_id', Auth::id())
+                ->where('status', 'open')
+                ->first();
 
             if (!$cashRegister) {
                 return response()->json(['error' => 'No tienes una caja abierta.'], 400);
             }
 
-            // Generar número de orden automáticamente
-            $lastSale = Sale::latest('id')->first();
-            $nextNumber = $lastSale ? intval(substr($lastSale->order_number, 4)) + 1 : 1;
-            $orderNumber = 'PRO-' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+            // Obtener sucursal y su letra
+            $branch = Auth::user()->branch ?? null;
+            $branchLetter = $branch?->code_letter ?? 'A';
 
+            // Buscar última venta de esa sucursal
+            $lastSale = Sale::where('branch_id', $branch?->id)
+                ->where('order_number', 'LIKE', "PRO-{$branchLetter}-%")
+                ->latest('id')
+                ->first();
+
+            // Calcular siguiente número correlativo
+            $nextNumber = $lastSale ? intval(substr($lastSale->order_number, 7)) + 1 : 1;
+            $orderNumber = 'PRO-' . $branchLetter . '-' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+
+            // Validar datos
             $data = $request->validate([
                 'sale_date' => 'required|date',
                 'subtotal' => 'required|numeric|min:0',
@@ -66,10 +80,11 @@ class SaleController extends Controller
                 'change_given' => $data['change_given'] ?? null,
                 'payment_method_id' => $data['payment_method_id'] ?? null,
                 'payment_submethod_id' => $data['payment_submethod_id'] ?? null,
-                'branch_id' => Auth::user()->branch_id ?? null, 
-                'employee_id' => Auth::id(), 
+                'branch_id' => $branch?->id,
+                'employee_id' => Auth::id(),
             ]);
 
+            // Detalles de venta
             foreach ($data['items'] as $item) {
                 SaleDetail::create([
                     'sale_id' => $sale->id,
@@ -80,7 +95,7 @@ class SaleController extends Controller
                 ]);
             }
 
-            // Registrar movimiento en caja
+            // Movimiento en caja
             CashMovement::create([
                 'cash_register_id' => $cashRegister->id,
                 'user_id' => Auth::id(),
@@ -90,12 +105,12 @@ class SaleController extends Controller
                 'movement_date' => now(),
             ]);
 
-            // Actualizar totales de la caja
             $cashRegister->increment('total_sales', $sale->total);
 
             DB::commit();
 
             return response()->json([
+                'success' => true,
                 'message' => 'Venta registrada correctamente',
                 'order_number' => $orderNumber
             ], 201);
@@ -109,13 +124,22 @@ class SaleController extends Controller
         }
     }
 
+    /**
+     * Devuelve el siguiente número de orden para la sucursal del usuario
+     */
     public function nextOrderNumber()
     {
-        $lastSale = Sale::latest('id')->first();
-        $nextNumber = $lastSale ? intval(substr($lastSale->order_number, 4)) + 1 : 1;
-        $orderNumber = 'PRO-' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+        $branch = Auth::user()->branch ?? null;
+        $branchLetter = $branch?->code_letter ?? 'A';
+
+        $lastSale = Sale::where('branch_id', $branch?->id)
+            ->where('order_number', 'LIKE', "PRO-{$branchLetter}-%")
+            ->latest('id')
+            ->first();
+
+        $nextNumber = $lastSale ? intval(substr($lastSale->order_number, 7)) + 1 : 1;
+        $orderNumber = 'PRO-' . $branchLetter . '-' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
 
         return response()->json(['next_order_number' => $orderNumber]);
     }
-
 }

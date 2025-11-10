@@ -37,14 +37,28 @@ class UserController extends Controller
             ->orderBy('id', 'desc')
             ->paginate(10);
 
-        // Admin puede ver todas las sucursales y roles, manager solo su sucursal
+        // Sucursales visibles según rol
         $branches = $user->role->name === 'admin'
             ? Branch::orderBy('name')->get()
             : Branch::where('id', $user->branch_id)->get();
 
-        $roles = Role::orderBy('name')->get();
+        // Filtrar roles según el rol del usuario logueado
+        if ($user->role->name === 'admin') {
+            $roles = Role::orderBy('name')->get(); // todos
+        } elseif ($user->role->name === 'manager') {
+            $roles = Role::where('name', 'employee')->get();
+        } else {
+            $roles = collect(); // sin acceso
+        }
 
-        return view('admin.users.index', compact('users', 'search', 'branches', 'roles'));
+        // Traducción de roles (para mostrar en español en la vista)
+        $roleTranslations = [
+            'admin' => 'Administrador',
+            'manager' => 'Gerente',
+            'employee' => 'Empleado',
+        ];
+
+        return view('admin.users.index', compact('users', 'search', 'branches', 'roles', 'roleTranslations'));
     }
 
     /**

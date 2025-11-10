@@ -71,6 +71,9 @@ class OrderController extends Controller
         return view('admin.orders.create', compact('customers', 'branches', 'statuses', 'categories', 'paymentMethods'));
     }
 
+    /** 
+     * Crear nueva orden
+     */
     public function store(Request $request)
     {
         $request->validate([
@@ -92,53 +95,50 @@ class OrderController extends Controller
         DB::beginTransaction();
 
         try {
+            $cashRegister = CashRegister::where('user_id', Auth::id())
+                ->where('status', 'open')
+                ->first();
 
-            // Verificar si el usuario tiene caja abierta
-                $cashRegister = CashRegister::where('user_id', Auth::id())
-                    ->where('status', 'open')
-                    ->first();
-
-                if (!$cashRegister) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'No puedes registrar una orden porque no tienes una caja abierta. 
-                                    Debes abrir tu caja antes de procesar ventas o pagos.',
-                    ], 400);
+            if (!$cashRegister) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No puedes registrar una orden porque no tienes una caja abierta. 
+                                Debes abrir tu caja antes de procesar ventas o pagos.',
+                ], 400);
             }
 
-            // Calcular total de servicios
-            $total = 0;
-            foreach ($request->order_items as $item) {
-                $subtotal = $item['quantity'] * $item['unit_price'];
-                $total += $subtotal;
-            }
-
-            // Valores base
+            // Calcular totales
+            $total = collect($request->order_items)->sum(fn($i) => $i['quantity'] * $i['unit_price']);
             $discount = $request->discount ?? 0;
             $tax = $request->tax ?? 0;
             $paymentAmount = $request->payment_amount ?? 0;
 
-            // Calcular total final
-            $finalTotal = $total - $discount + $tax;
-            $finalTotal = max(0, $finalTotal);
-
-            // Calcular vuelto
+            $finalTotal = max(0, $total - $discount + $tax);
             $paymentReturned = $paymentAmount > $finalTotal ? $paymentAmount - $finalTotal : 0;
-
-            // Estado de pago
             $paymentStatus = $request->payment_status ?? 'pending';
 
-            // Generar número de orden incremental (ORD-0001, ORD-0002, ...)
-            $lastOrder = Order::latest('id')->first();
-            $nextNumber = $lastOrder ? intval(substr($lastOrder->order_number, 4)) + 1 : 1;
-            $orderNumber = 'SRV-' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+            // Obtener sucursal y su letra
+            $branch = Branch::findOrFail($request->branch_id);
+            $branchLetter = $branch->code_letter ?? 'A';
+
+            // Última orden de esa sucursal
+            $lastOrder = Order::where('branch_id', $branch->id)
+                ->where('order_number', 'LIKE', "SRV-{$branchLetter}-%")
+                ->latest('id')
+                ->first();
+
+            $nextNumber = $lastOrder
+                ? intval(substr($lastOrder->order_number, 7)) + 1
+                : 1;
+
+            $orderNumber = 'SRV-' . $branchLetter . '-' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
 
             // Crear la orden
             $order = Order::create([
                 'order_number' => $orderNumber,
                 'customer_id' => $request->customer_id,
                 'employee_id' => Auth::id(),
-                'branch_id' => $request->branch_id,
+                'branch_id' => $branch->id,
                 'order_status_id' => $request->order_status_id,
                 'payment_method_id' => $request->payment_method_id,
                 'payment_submethod_id' => $request->payment_submethod_id,
@@ -154,7 +154,6 @@ class OrderController extends Controller
                 'notes' => $request->notes,
             ]);
 
-            // Guardar los ítems
             foreach ($request->order_items as $item) {
                 $order->items()->create([
                     'service_id' => $item['service_id'],
@@ -163,29 +162,20 @@ class OrderController extends Controller
                 ]);
             }
 
-            // Registrar movimiento en caja si hay pago
+            // Movimiento en caja
             if ($paymentAmount > 0) {
-                $cashRegister = CashRegister::where('user_id', Auth::id())
-                    ->where('status', 'open')
-                    ->first();
+                $realAmount = $paymentAmount - $paymentReturned;
 
-                if ($cashRegister) {
-                    // Monto real que entra a caja (ya sin contar el vuelto)
-                    $realAmount = $paymentAmount - $paymentReturned;
+                CashMovement::create([
+                    'cash_register_id' => $cashRegister->id,
+                    'user_id' => Auth::id(),
+                    'type' => 'sale',
+                    'amount' => $realAmount,
+                    'concept' => "Venta - Orden {$orderNumber}",
+                    'movement_date' => now(),
+                ]);
 
-                    // Solo registrar la venta neta (sin mostrar el vuelto como egreso)
-                    CashMovement::create([
-                        'cash_register_id' => $cashRegister->id,
-                        'user_id' => Auth::id(),
-                        'type' => 'sale',
-                        'amount' => $realAmount,
-                        'concept' => "Venta - Orden {$orderNumber}",
-                        'movement_date' => now(),
-                    ]);
-
-                    // Actualizar el total de ventas en caja solo con el neto
-                    $cashRegister->increment('total_sales', $realAmount);
-                }
+                $cashRegister->increment('total_sales', $realAmount);
             }
 
             DB::commit();
@@ -205,6 +195,26 @@ class OrderController extends Controller
                 'message' => 'Error al crear la orden: ' . $e->getMessage(),
             ]);
         }
+    }
+
+    /**
+     * Obtener el siguiente número de orden de lavandería
+     */
+    public function nextOrderNumber()
+    {
+        $branch = Auth::user()->branch ?? null;
+        $branchLetter = $branch?->code_letter ?? 'A';
+
+        $lastOrder = Order::where('branch_id', $branch?->id)
+            ->where('order_number', 'LIKE', "SRV-{$branchLetter}-%")
+            ->latest('id')
+            ->first();
+
+        $nextNumber = $lastOrder ? intval(substr($lastOrder->order_number, 7)) + 1 : 1;
+
+        $nextOrderNumber = 'SRV-' . $branchLetter . '-' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+
+        return response()->json(['next_order_number' => $nextOrderNumber]);
     }
 
     public function show(Order $order)

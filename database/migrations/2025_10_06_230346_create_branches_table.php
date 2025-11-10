@@ -23,6 +23,7 @@ return new class extends Migration
             $table->enum('status', ['active', 'inactive'])->default('active');
             $table->json('schedule');
             $table->boolean('is_open')->default(false);
+             $table->char('code_letter', 1)->unique('name');
             $table->timestamps();
         });
     }

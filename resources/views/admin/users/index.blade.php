@@ -55,7 +55,7 @@
                                 <td>{{ $user->full_name }}</td>
                                 <td>{{ $user->email }}</td>
                                 <td>{{ $user->phone ?? '-' }}</td>
-                                <td><span class="badge bg-info-subtle text-dark">{{ $user->role->name ?? 'N/A' }}</span></td>
+                                <td><span class="badge bg-info-subtle text-dark">{{ $roleTranslations[$user->role->name] ?? $user->role->name ?? 'N/A' }}</span></td>
                                 <td><span class="badge bg-secondary-subtle text-dark">{{ $user->branch->name ?? 'N/A' }}</span></td>
                                 <td>
                                     @if($user->status === 'active')
@@ -112,8 +112,11 @@
                                                     <div class="col-md-6">
                                                         <label class="form-label">Rol</label>
                                                         <select name="role_id" class="form-select" required>
-                                                            @foreach(App\Models\Role::all() as $role)
-                                                                <option value="{{ $role->id }}" {{ $user->role_id == $role->id ? 'selected' : '' }}>{{ $role->name }}</option>
+                                                            @foreach($roles as $role)
+                                                                <option value="{{ $role->id }}" 
+                                                                    {{ $user->role_id == $role->id ? 'selected' : '' }}>
+                                                                    {{ $roleTranslations[$role->name] ?? $role->name }}
+                                                                </option>
                                                             @endforeach
                                                         </select>
                                                     </div>
@@ -199,8 +202,8 @@
                             <label class="form-label">Rol</label>
                             <select name="role_id" class="form-select" required>
                                 <option value="">Seleccione...</option>
-                                @foreach(App\Models\Role::all() as $role)
-                                    <option value="{{ $role->id }}">{{ $role->name }}</option>
+                                @foreach($roles as $role)
+                                    <option value="{{ $role->id }}">{{ $roleTranslations[$role->name] ?? $role->name }}</option>
                                 @endforeach
                             </select>
                         </div>

@@ -89,6 +89,7 @@
         <div class="col-md-5">
             <div class="card shadow-sm border-0">
                 <div class="card-body">
+                    <!-- Buscar orden de servicio -->
                     <div class="mb-3 position-relative">
                         <div class="input-group">
                             <span class="input-group-text fw-bold bg-light">SRV-</span>
@@ -101,6 +102,7 @@
                         </ul>
                     </div>
 
+                    <!-- Orden de producto -->
                     <div class="d-flex mb-3">
                         <input type="text" id="numero_orden" class="form-control me-2" readonly>
                         <input type="date" id="fecha_orden" class="form-control" value="{{ date('Y-m-d') }}">
@@ -308,14 +310,15 @@ let ordenSeleccionada = null;
 document.addEventListener("DOMContentLoaded", () => {
     const inputBuscar = document.getElementById("buscar_producto");
     const listaCategorias = document.getElementById("lista_categorias");
-    const categorias = listaCategorias.querySelectorAll(".categoria-card");
+    const categorias = @json($categorias); // 👈 tenemos productos dentro
+    const cards = listaCategorias.querySelectorAll(".categoria-card");
 
-    // Crear mensaje vacío (inicialmente oculto)
+    // Mensaje cuando no hay coincidencias
     const mensajeNoEncontrado = document.createElement("div");
     mensajeNoEncontrado.id = "mensaje_no_encontrado";
     mensajeNoEncontrado.className = "text-center text-muted mt-3 fw-semibold";
     mensajeNoEncontrado.style.display = "none";
-    mensajeNoEncontrado.textContent = "😕 No se encontraron categorías con ese nombre.";
+    mensajeNoEncontrado.textContent = "😕 No se encontraron coincidencias.";
     listaCategorias.parentElement.appendChild(mensajeNoEncontrado);
 
     inputBuscar.addEventListener("input", () => {
@@ -324,19 +327,28 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (texto === "") {
             // Mostrar todas si no hay texto
-            categorias.forEach(cat => cat.closest(".col-md-3").classList.remove("d-none"));
+            cards.forEach(cat => cat.closest(".col-md-3").classList.remove("d-none"));
             mensajeNoEncontrado.style.display = "none";
             return;
         }
 
-        categorias.forEach(cat => {
-            const nombre = cat.querySelector("h6").textContent.toLowerCase();
-            const mostrar = nombre.includes(texto);
+        cards.forEach(cat => {
+            const categoriaId = cat.dataset.id;
+            const categoria = categorias.find(c => c.id == categoriaId);
+
+            // Buscar coincidencia por nombre de categoría o producto
+            const nombreCategoria = categoria.name.toLowerCase();
+            const coincideCategoria = nombreCategoria.includes(texto);
+
+            const coincideProducto = categoria.products.some(prod =>
+                prod.name.toLowerCase().includes(texto)
+            );
+
+            const mostrar = coincideCategoria || coincideProducto;
             cat.closest(".col-md-3").classList.toggle("d-none", !mostrar);
             if (mostrar) coincidencias++;
         });
 
-        // Mostrar mensaje si no hay coincidencias
         mensajeNoEncontrado.style.display = coincidencias === 0 ? "block" : "none";
     });
 });
@@ -496,39 +508,43 @@ document.addEventListener('DOMContentLoaded', function () {
     // --- Buscar órdenes de servicio ---
     const inputBuscarOrden = document.getElementById('buscar_orden_servicio');
     const resultadosOrdenes = document.getElementById('resultados_ordenes');
+    const prefixSpan = document.querySelector('.input-group-text'); 
 
     inputBuscarOrden.addEventListener('input', async () => {
-    let numero = inputBuscarOrden.value.replace(/\D/g, '');
-    if (numero.length < 2) {
-        resultadosOrdenes.style.display = 'none';
-        return;
-    }
+        let numero = inputBuscarOrden.value.replace(/\D/g, '');
 
-    const query = `SRV-${numero}`; 
-
-    try {
-        const res = await fetch(`/admin/pos/buscar-orden?q=${query}`);
-        const data = await res.json();
-
-        resultadosOrdenes.innerHTML = '';
-        if (data.length > 0) {
-        data.forEach(o => {
-            resultadosOrdenes.insertAdjacentHTML('beforeend', `
-            <li class="list-group-item list-group-item-action" data-id="${o.id}">
-                <strong>${o.order_number}</strong> - ${o.customer_name}
-            </li>
-            `);
-        });
-        resultadosOrdenes.style.display = 'block';
-        } else {
-        resultadosOrdenes.innerHTML = '<li class="list-group-item text-muted">No se encontraron resultados</li>';
-        resultadosOrdenes.style.display = 'block';
+        if (numero.length < 2) {
+            resultadosOrdenes.style.display = 'none';
+            return;
         }
-    } catch (error) {
-        console.error('Error al buscar orden:', error);
-        resultadosOrdenes.innerHTML = '<li class="list-group-item text-danger">Error al buscar</li>';
-        resultadosOrdenes.style.display = 'block';
-    }
+
+        // Tomamos el prefijo actual directamente del span
+        const prefix = prefixSpan.textContent.trim();
+        const query = `${prefix}${numero}`; 
+
+        try {
+            const res = await fetch(`/admin/pos/buscar-orden?q=${query}`);
+            const data = await res.json();
+
+            resultadosOrdenes.innerHTML = '';
+            if (data.length > 0) {
+                data.forEach(o => {
+                    resultadosOrdenes.insertAdjacentHTML('beforeend', `
+                        <li class="list-group-item list-group-item-action" data-id="${o.id}">
+                            <strong>${o.order_number}</strong> - ${o.customer_name}
+                        </li>
+                    `);
+                });
+                resultadosOrdenes.style.display = 'block';
+            } else {
+                resultadosOrdenes.innerHTML = '<li class="list-group-item text-muted">No se encontraron resultados</li>';
+                resultadosOrdenes.style.display = 'block';
+            }
+        } catch (error) {
+            console.error('Error al buscar orden:', error);
+            resultadosOrdenes.innerHTML = '<li class="list-group-item text-danger">Error al buscar</li>';
+            resultadosOrdenes.style.display = 'block';
+        }
     });
 
     // --- Seleccionar una orden ---
@@ -1002,55 +1018,92 @@ document.addEventListener('DOMContentLoaded', () => {
     const submetodoPagoSelect = document.getElementById('submetodoPagoSelect');
     const montoRecibidoInput = document.getElementById('montoRecibidoInput');
     const vueltoModal = document.getElementById('vuelto_modal');
+    const numeroOrdenInput = document.getElementById('numero_orden');
+    const numeroOrdenModal = document.getElementById('numeroOrdenModal');
+    const buscarOrdenServicio = document.getElementById('buscar_orden_servicio');
+    const resultadosOrdenes = document.getElementById('resultados_ordenes');
 
     let metodosPago = [];
     let totalActual = 0;
 
-    // Cargar número de orden inicial
+    // Cargar número de orden de PRODUCTOS
     fetch('/admin/pos/next-order-number')
         .then(res => res.json())
         .then(data => {
-            document.getElementById('numero_orden').value = data.next_order_number;
-            document.getElementById('numeroOrdenModal').textContent = data.next_order_number;
+            numeroOrdenInput.value = data.next_order_number;
+            if (numeroOrdenModal) numeroOrdenModal.textContent = data.next_order_number;
         })
-        .catch(err => console.error('Error cargando número de orden:', err));
+        .catch(err => console.error('Error cargando número de orden PRODUCTO:', err));
 
-
-    // Cargar métodos de pago al abrir el modal
-    fetch('/admin/pos/payment-methods')
+    // Cargar número de orden de SERVICIO (mostrar como placeholder)
+    fetch('/admin/orders/next-order-number')
         .then(res => res.json())
         .then(data => {
-            metodosPago = data;
-            metodoPagoSelect.innerHTML = `<option value="">Seleccione un método</option>`;
-            data.forEach(m => {
-                metodoPagoSelect.insertAdjacentHTML('beforeend', `<option value="${m.id}">${m.name}</option>`);
+            // Ejemplo: SRV-A-0005
+            const partes = data.next_order_number.split('-'); 
+
+            const prefixSpan = document.querySelector('.input-group-text');
+            const inputServicio = document.getElementById('buscar_orden_servicio');
+
+            if (partes.length === 3) {
+                // Mostrar prefijo SRV-A-
+                prefixSpan.textContent = `${partes[0]}-${partes[1]}-`;
+                // Mostrar el número sugerido como placeholder
+                inputServicio.placeholder = partes[2];
+            } else {
+                // Si el formato no es el esperado, mostrar todo como placeholder
+                prefixSpan.textContent = 'SRV-';
+                inputServicio.placeholder = data.next_order_number;
+            }
+        })
+        .catch(err => console.error('Error cargando número de orden SERVICIO:', err));
+
+        // Cargar métodos de pago
+        fetch('/admin/pos/payment-methods')
+            .then(res => res.json())
+            .then(data => {
+                metodosPago = data;
+                metodoPagoSelect.innerHTML = `<option value="">Seleccione un método</option>`;
+                data.forEach(m => {
+                    metodoPagoSelect.insertAdjacentHTML('beforeend', `<option value="${m.id}">${m.name}</option>`);
+                });
             });
+
+        // Cargar submétodos según método seleccionado 
+        metodoPagoSelect.addEventListener('change', e => {
+            const metodoSeleccionado = metodosPago.find(m => m.id == e.target.value);
+            submetodoPagoSelect.innerHTML = `<option value="">Seleccione un submétodo</option>`;
+            if (metodoSeleccionado && metodoSeleccionado.submethods.length > 0) {
+                metodoSeleccionado.submethods.forEach(s => {
+                    submetodoPagoSelect.insertAdjacentHTML('beforeend', `<option value="${s.id}">${s.name}</option>`);
+                });
+            }
         });
 
-    // Cargar submétodos según método seleccionado 
-    metodoPagoSelect.addEventListener('change', e => {
-        const metodoSeleccionado = metodosPago.find(m => m.id == e.target.value);
-        submetodoPagoSelect.innerHTML = `<option value="">Seleccione un submétodo</option>`;
-        if (metodoSeleccionado && metodoSeleccionado.submethods.length > 0) {
-            metodoSeleccionado.submethods.forEach(s => {
-                submetodoPagoSelect.insertAdjacentHTML('beforeend', `<option value="${s.id}">${s.name}</option>`);
+        // Calcular vuelto
+        montoRecibidoInput.addEventListener('input', () => {
+            const recibido = parseFloat(montoRecibidoInput.value) || 0;
+            const vuelto = recibido - totalActual;
+            vueltoModal.textContent = `S/ ${vuelto.toFixed(2)}`;
+        });
+
+        // Observar cambios en el total del modal
+        const totalModal = document.getElementById('total_modal');
+        if (totalModal) {
+            const observer = new MutationObserver(() => {
+                const totalText = totalModal.textContent.replace('S/', '').trim();
+                totalActual = parseFloat(totalText) || 0;
             });
+            observer.observe(totalModal, { childList: true });
         }
-    });
 
-    // Calcular vuelto en tiempo real
-    montoRecibidoInput.addEventListener('input', () => {
-        const recibido = parseFloat(montoRecibidoInput.value) || 0;
-        const vuelto = recibido - totalActual;
-        vueltoModal.textContent = `S/ ${vuelto.toFixed(2)}`;
-    });
-
-    // Capturar total actual del modal 
-    const observer = new MutationObserver(() => {
-        const totalText = document.getElementById('total_modal').textContent.replace('S/', '').trim();
-        totalActual = parseFloat(totalText) || 0;
-    });
-    observer.observe(document.getElementById('total_modal'), { childList: true });
+        // Seleccionar orden de servicio del listado
+        resultadosOrdenes.addEventListener('click', e => {
+            if (e.target.matches('li[data-id]')) {
+                buscarOrdenServicio.value = e.target.textContent.trim();
+                resultadosOrdenes.style.display = 'none';
+            }
+        });
 });
 </script>
 @endpush
