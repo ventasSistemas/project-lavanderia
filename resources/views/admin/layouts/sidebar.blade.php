@@ -63,6 +63,9 @@
             <a href="{{ route('admin.complementary-product-categories.index') }}" class="nav-link {{ request()->routeIs('admin.complementary-product-categories.index') ? 'active' : '' }}">
                 <i class="fa-solid fa-dumpster-fire"></i> Prodctos Complement.
             </a>
+            <a href="{{ route('admin.product-transfers.index') }}" class="nav-link {{ request()->routeIs('admin.product-transfers.index') ? 'active' : '' }}">
+                <i class="fa-solid fa-dumpster-fire"></i> Productos Recepcion
+            </a>
         </li>
         @endif
 

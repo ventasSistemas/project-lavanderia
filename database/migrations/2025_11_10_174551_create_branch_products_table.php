@@ -11,12 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('complementary_product_categories', function (Blueprint $table) {
+        Schema::create('branch_products', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('branch_id')->nullable()->constrained('branches')->onDelete('cascade');
-            $table->string('name', 120);
-            $table->text('description')->nullable();
-            $table->string('image')->nullable();
+            $table->foreignId('branch_id')->constrained('branches')->onDelete('cascade');
+            $table->foreignId('complementary_product_id')->constrained('complementary_products')->onDelete('cascade');
+            $table->integer('stock')->default(0);
             $table->timestamps();
         });
     }
@@ -26,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('complementary_product_categories');
+        Schema::dropIfExists('branch_products');
     }
 };

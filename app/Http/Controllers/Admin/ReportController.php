@@ -11,6 +11,11 @@ use App\Models\Branch;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Barryvdh\DomPDF\Facade\Pdf;
+use App\Exports\VentasExport;
+use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Pagination\Paginator;
 
 class ReportController extends Controller
 {
@@ -21,15 +26,10 @@ class ReportController extends Controller
         $fechaInicio = $request->input('fecha_inicio', Carbon::now()->startOfMonth()->toDateString());
         $fechaFin = $request->input('fecha_fin', Carbon::now()->endOfMonth()->toDateString());
 
-        // Filtros opcionales (solo visibles para admin)
         $filtroSucursalId = $request->input('sucursal_id');
         $filtroEmpleadoId = $request->input('empleado_id');
 
-        /*
-        Filtro rol/sucursal dinámico
-        */
         $filtroSucursal = function ($query) use ($user, $filtroSucursalId, $filtroEmpleadoId) {
-
             if ($user->role->name === 'employee') {
                 $query->where('branch_id', $user->branch_id)
                     ->where('employee_id', $user->id);
@@ -37,17 +37,15 @@ class ReportController extends Controller
                 $query->where('branch_id', $user->branch_id);
             } elseif ($user->role->name === 'admin') {
                 if ($filtroSucursalId && $filtroSucursalId !== 'all') {
-        $query->where('branch_id', $filtroSucursalId);
-    }
-    if ($filtroEmpleadoId && $filtroEmpleadoId !== 'all') {
-        $query->where('employee_id', $filtroEmpleadoId);
-    }
+                    $query->where('branch_id', $filtroSucursalId);
+                }
+                if ($filtroEmpleadoId && $filtroEmpleadoId !== 'all') {
+                    $query->where('employee_id', $filtroEmpleadoId);
+                }
             }
         };
 
-        /*
-        Órdenes entregadas
-        */
+        // --- Órdenes entregadas ---
         $ventasOrdenes = Order::with(['customer', 'status', 'paymentMethod', 'branch'])
             ->whereHas('status', fn($q) => $q->where('name', 'Entregado'))
             ->whereBetween('delivery_date', [$fechaInicio, $fechaFin])
@@ -67,9 +65,7 @@ class ReportController extends Controller
                 ];
             });
 
-        /*
-        Ventas de productos
-        */
+        // --- Ventas de productos ---
         $ventasProductos = Sale::with(['paymentMethod', 'branch'])
             ->whereBetween('sale_date', [$fechaInicio, $fechaFin])
             ->when(true, fn($query) => $filtroSucursal($query))
@@ -88,18 +84,28 @@ class ReportController extends Controller
                 ];
             });
 
-        /*
-        combinamos y sumamos
-        */
-        $ventas = (new Collection())
+        // --- Combinamos y ordenamos ---
+        $ventasCollection = (new Collection())
             ->concat($ventasOrdenes)
             ->concat($ventasProductos)
             ->sortByDesc('fecha')
             ->values();
 
-        $total = $ventas->sum('total');
+        $total = $ventasCollection->sum('total');
 
-        // Cargar listas para el filtro admin
+        // --- Paginación manual ---
+        $page = Paginator::resolveCurrentPage('page') ?: 1;
+        $perPage = 10;
+        $offset = ($page - 1) * $perPage;
+        $ventas = new LengthAwarePaginator(
+            $ventasCollection->slice($offset, $perPage),
+            $ventasCollection->count(),
+            $perPage,
+            $page,
+            ['path' => Paginator::resolveCurrentPath()]
+        );
+
+        // --- Datos de filtros (solo admin) ---
         $sucursales = [];
         $empleados = [];
         if ($user->role->name === 'admin') {
@@ -139,5 +145,106 @@ class ReportController extends Controller
             ->get(['id', 'full_name as name']);
 
         return response()->json($empleados);
+    }
+
+    public function exportarVentasPDF(Request $request)
+    {
+        $data = $this->obtenerVentasFiltradas($request);
+        $pdf = Pdf::loadView('admin.reports.pdf.ventas', $data)
+            ->setPaper('a4', 'landscape');
+
+        return $pdf->download('Reporte_Ventas_' . now()->format('Ymd_His') . '.pdf');
+    }
+
+    public function exportarVentasExcel(Request $request)
+    {
+        $data = $this->obtenerVentasFiltradas($request);
+
+        $ventas = $data['ventas'];
+        $fechaInicio = $data['fechaInicio'];
+        $fechaFin = $data['fechaFin'];
+        $total = $data['total'];
+
+        $sucursal = $request->sucursal_id ? Branch::find($request->sucursal_id) : null;
+        $empleado = $request->empleado_id ? User::find($request->empleado_id) : null;
+
+        return Excel::download(
+            new VentasExport($ventas, $fechaInicio, $fechaFin, $sucursal, $empleado, $total),
+            'Reporte_Ventas_' . now()->format('Ymd_His') . '.xlsx'
+        );
+    }
+
+    /**
+     * Extrae la lógica de filtrado para reutilizar
+     */
+    private function obtenerVentasFiltradas(Request $request): array
+    {
+        $user = Auth::user();
+
+        $fechaInicio = $request->input('fecha_inicio', Carbon::now()->startOfMonth()->toDateString());
+        $fechaFin = $request->input('fecha_fin', Carbon::now()->endOfMonth()->toDateString());
+        $filtroSucursalId = $request->input('sucursal_id');
+        $filtroEmpleadoId = $request->input('empleado_id');
+
+        $filtroSucursal = function ($query) use ($user, $filtroSucursalId, $filtroEmpleadoId) {
+            if ($user->role->name === 'employee') {
+                $query->where('branch_id', $user->branch_id)
+                    ->where('employee_id', $user->id);
+            } elseif (in_array($user->role->name, ['manager', 'subadmin'])) {
+                $query->where('branch_id', $user->branch_id);
+            } elseif ($user->role->name === 'admin') {
+                if ($filtroSucursalId && $filtroSucursalId !== 'all') {
+                    $query->where('branch_id', $filtroSucursalId);
+                }
+                if ($filtroEmpleadoId && $filtroEmpleadoId !== 'all') {
+                    $query->where('employee_id', $filtroEmpleadoId);
+                }
+            }
+        };
+
+        $ventasOrdenes = Order::with(['customer', 'status', 'paymentMethod', 'branch'])
+            ->whereHas('status', fn($q) => $q->where('name', 'Entregado'))
+            ->whereBetween('delivery_date', [$fechaInicio, $fechaFin])
+            ->when(true, fn($query) => $filtroSucursal($query))
+            ->get()
+            ->map(function ($order) {
+                return [
+                    'tipo' => 'Orden de Servicio',
+                    'fecha' => $order->delivery_date,
+                    'numero' => $order->order_number,
+                    'cliente' => $order->customer?->full_name ?? 'Sin cliente',
+                    'estado' => $order->status?->name ?? '-',
+                    'metodo_pago' => $order->paymentMethod?->name ?? '-',
+                    'total' => $order->final_total,
+                    'sucursal' => $order->branch?->name ?? '-',
+                ];
+            });
+
+        $ventasProductos = Sale::with(['paymentMethod', 'branch'])
+            ->whereBetween('sale_date', [$fechaInicio, $fechaFin])
+            ->when(true, fn($query) => $filtroSucursal($query))
+            ->get()
+            ->map(function ($sale) {
+                return [
+                    'tipo' => 'Venta de Producto',
+                    'fecha' => $sale->sale_date,
+                    'numero' => $sale->order_number,
+                    'cliente' => '-',
+                    'estado' => 'Completado',
+                    'metodo_pago' => $sale->paymentMethod?->name ?? '-',
+                    'total' => $sale->total,
+                    'sucursal' => $sale->branch?->name ?? '-',
+                ];
+            });
+
+        $ventas = (new Collection())
+            ->concat($ventasOrdenes)
+            ->concat($ventasProductos)
+            ->sortByDesc('fecha')
+            ->values();
+
+        $total = $ventas->sum('total');
+
+        return compact('ventas', 'fechaInicio', 'fechaFin', 'total');
     }
 }

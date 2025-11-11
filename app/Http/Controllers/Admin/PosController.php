@@ -20,7 +20,27 @@ class PosController extends Controller
     // Vista principal del POS
     public function index()
     {
-        $categorias = ComplementaryProductCategory::with('products')->get();
+        $user = Auth::user();
+
+        // Traer categorías que tengan productos para la sucursal del usuario
+        $categorias = ComplementaryProductCategory::whereHas('products', function($query) use ($user) {
+            if ($user->role->name !== 'admin') {
+                // Solo productos de su sucursal
+                $query->where('branch_id', $user->branch_id);
+            } else {
+                // Admin ve productos globales (sin branch_id)
+                $query->whereNull('branch_id');
+            }
+        })
+        ->with(['products' => function($query) use ($user) {
+            if ($user->role->name !== 'admin') {
+                $query->where('branch_id', $user->branch_id);
+            } else {
+                $query->whereNull('branch_id');
+            }
+        }])
+        ->get();
+
         $clientes = Customer::all();
         $orderStatuses = OrderStatus::all();
         $paymentMethods = PaymentMethod::all();

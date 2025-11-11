@@ -13,8 +13,10 @@ class ComplementaryProduct extends Model
         'complementary_product_category_id',
         'name',
         'price',
+        'stock',
         'image',
         'state',
+        'branch_id', 
     ];
 
     public function category()
@@ -22,9 +24,8 @@ class ComplementaryProduct extends Model
         return $this->belongsTo(ComplementaryProductCategory::class, 'complementary_product_category_id');
     }
 
-    public function orderDetails()
+    public function branch()
     {
-        return $this->hasMany(OrderDetail::class, 'complementary_product_id');
+        return $this->belongsTo(Branch::class);
     }
-
 }

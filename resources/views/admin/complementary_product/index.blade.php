@@ -18,6 +18,24 @@
         </button>
     </div>
 
+    @if(Auth::user()->role->name === 'admin')
+        <div class="mb-4">
+            <form method="GET" action="{{ route('admin.complementary-product-categories.index') }}" class="row g-3 align-items-end">
+                <div class="col-md-6 col-lg-4">
+                    <label for="branchSelect" class="form-label fw-semibold">Ver categorías de sucursal</label>
+                    <select name="branch_id" id="branchSelect" class="form-select" onchange="this.form.submit()">
+                        <option value="">— Categorías Globales (Administrador) —</option>
+                        @foreach($branches as $branch)
+                            <option value="{{ $branch->id }}" {{ (isset($selectedBranch) && $selectedBranch == $branch->id) ? 'selected' : '' }}>
+                                {{ $branch->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+            </form>
+        </div>
+    @endif
+
     <!-- Lista de Categorías -->
     <div class="accordion" id="accordionComplementaryCategories">
         @forelse($categories as $category)
@@ -78,6 +96,7 @@
                                                     <th>Imagen</th>
                                                     <th>Nombre</th>
                                                     <th>Precio</th>
+                                                    <th>Stock</th>
                                                     <th>Estado</th>
                                                     <th class="pe-3 text-end">Acciones</th>
                                                 </tr>
@@ -95,6 +114,7 @@
                                                         </td>
                                                         <td>{{ $product->name }}</td>
                                                         <td>S/ {{ number_format($product->price, 2) }}</td>
+                                                        <td>{{ $product->stock }}</td>
                                                         <td>
                                                             @if($product->state === 'active')
                                                                 <span class="badge bg-success">Activo</span>
@@ -135,6 +155,11 @@
                                                                         <div class="mb-3">
                                                                             <label class="form-label fw-semibold">Precio</label>
                                                                             <input type="number" name="price" step="0.01" class="form-control" value="{{ $product->price }}" required>
+                                                                        </div>
+                                                                        <div class="mb-3">
+                                                                            <label class="form-label fw-semibold">Stock</label>
+                                                                            <input type="number" name="stock" min="0" class="form-control"
+                                                                                value="{{ isset($product) ? $product->stock : old('stock', 0) }}" required>
                                                                         </div>
                                                                         <div class="mb-3">
                                                                             <label class="form-label fw-semibold">Imagen</label>
@@ -270,6 +295,11 @@
                                 <div class="mb-3">
                                     <label class="form-label">Precio</label>
                                     <input type="number" step="0.01" name="price" class="form-control" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold">Stock</label>
+                                    <input type="number" name="stock" min="0" class="form-control"
+                                        value="{{ isset($product) ? $product->stock : old('stock', 0) }}" required>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">Imagen</label>

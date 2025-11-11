@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 
+use App\Http\Controllers\Admin\ProductTransferController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\CashRegisterController;
@@ -188,6 +189,7 @@ Route::middleware('auth')->group(function () {
             Route::get('/order-statuses', [PosController::class, 'obtenerEstadosPedido']);
         });
 
+        // Caja
         Route::prefix('cash')->name('cash.')->group(function () {
             Route::get('/', [CashRegisterController::class, 'index'])->name('index');
             Route::post('/open', [CashRegisterController::class, 'open'])->name('open');
@@ -195,14 +197,44 @@ Route::middleware('auth')->group(function () {
             Route::post('/close', [CashRegisterController::class, 'close'])->name('close');
         });
 
-        // Users (solo admin y manager pueden acceder)
+        // Reports -> Users (solo admin y manager pueden acceder)
         Route::prefix('reports')->name('reports.')
             ->middleware('role:admin,manager,subadmin')
             ->group(function () {
                 Route::get('/ventas', [ReportController::class, 'ventas'])->name('ventas');
                 Route::get('/buscar-sucursales', [ReportController::class, 'buscarSucursales'])->name('buscarSucursales');
                 Route::get('/buscar-empleados', [ReportController::class, 'buscarEmpleados'])->name('buscarEmpleados');
-            });
+                Route::get('ventas/pdf', [ReportController::class, 'exportarVentasPDF'])->name('ventas.pdf');
+                Route::get('ventas/excel', [ReportController::class, 'exportarVentasExcel'])->name('ventas.excel');
+                Route::get('/buscar-sucursales', [ReportController::class, 'buscarSucursales'])->name('buscarSucursales');
+                Route::get('/buscar-empleados', [ReportController::class, 'buscarEmpleados'])->name('buscarEmpleados');
+        });
+
+        // Trasnferencia de Productos
+        Route::prefix('product-transfers')
+            ->name('product-transfers.')
+            ->middleware('role:admin,manager')
+            ->group(function () {
+                
+                // Listar todas las transferencias
+                Route::get('/', [ProductTransferController::class, 'index'])->name('index');
+                Route::get('/get-products/{category}', [ProductTransferController::class, 'getProducts']);
+                
+                // Enviar nueva transferencia (solo admin)
+                Route::post('/store', [ProductTransferController::class, 'store'])
+                    ->middleware('role:admin')
+                    ->name('store');
+                
+                // Aceptar transferencia (solo manager)
+                Route::post('/{transfer}/approve', [ProductTransferController::class, 'approve'])
+                    ->middleware('role:manager')
+                    ->name('approve');
+                
+                // Rechazar transferencia (solo manager)
+                Route::post('/{transfer}/reject', [ProductTransferController::class, 'reject'])
+                    ->middleware('role:manager')
+                    ->name('reject');
+        });
     });
 
 });
