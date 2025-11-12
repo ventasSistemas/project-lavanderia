@@ -209,12 +209,14 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Sucursal</label>
-                            <select name="branch_id" class="form-select">
-                                <option value="">Ninguna</option>
-                                @foreach(App\Models\Branch::all() as $branch)
-                                    <option value="{{ $branch->id }}">{{ $branch->name }}</option>
+                            <select name="branch_id" class="form-select" {{ Auth::user()->role->name === 'manager' ? 'readonly disabled' : '' }}>
+                                @foreach($branches as $branch)
+                                    <option value="{{ $branch->id }}" selected>{{ $branch->name }}</option>
                                 @endforeach
                             </select>
+                            @if(Auth::user()->role->name === 'manager')
+                                <input type="hidden" name="branch_id" value="{{ $branches->first()->id }}">
+                            @endif
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Estado</label>

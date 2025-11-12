@@ -17,41 +17,43 @@ class UserController extends Controller
      */
     public function index(Request $request)
     {
-        $user = Auth::user();
+        $authUser = Auth::user();
         $search = $request->input('search');
 
         $query = User::with(['role', 'branch']);
 
-        // Solo manager o subadmin ven usuarios de su sucursal
-        if (in_array($user->role->name, ['manager', 'subadmin'])) {
-            $query->where('branch_id', $user->branch_id);
+        // Si el usuario logueado es gerente o subadmin, solo ve su sucursal
+        if (in_array($authUser->role->name, ['manager', 'subadmin'])) {
+            $query->where('branch_id', $authUser->branch_id);
         }
 
         $users = $query
             ->when($search, function ($query, $search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('full_name', 'LIKE', "%{$search}%")
-                    ->orWhere('email', 'LIKE', "%{$search}%");
+                      ->orWhere('email', 'LIKE', "%{$search}%");
                 });
             })
             ->orderBy('id', 'desc')
             ->paginate(10);
 
-        // Sucursales visibles según rol
-        $branches = $user->role->name === 'admin'
-            ? Branch::orderBy('name')->get()
-            : Branch::where('id', $user->branch_id)->get();
-
-        // Filtrar roles según el rol del usuario logueado
-        if ($user->role->name === 'admin') {
-            $roles = Role::orderBy('name')->get(); // todos
-        } elseif ($user->role->name === 'manager') {
-            $roles = Role::where('name', 'employee')->get();
+        // Sucursales visibles según el rol
+        if ($authUser->role->name === 'admin') {
+            $branches = Branch::orderBy('name')->get();
         } else {
-            $roles = collect(); // sin acceso
+            $branches = Branch::where('id', $authUser->branch_id)->get();
         }
 
-        // Traducción de roles (para mostrar en español en la vista)
+        // Roles disponibles
+        if ($authUser->role->name === 'admin') {
+            $roles = Role::orderBy('name')->get();
+        } elseif ($authUser->role->name === 'manager') {
+            $roles = Role::where('name', 'employee')->get();
+        } else {
+            $roles = collect();
+        }
+
+        // Traducción de roles
         $roleTranslations = [
             'admin' => 'Administrador',
             'manager' => 'Gerente',
@@ -79,7 +81,7 @@ class UserController extends Controller
             'status' => 'required|in:active,inactive,suspended',
         ]);
 
-        // Manager solo puede asignar empleados a SU propia sucursal
+        // Manager o subadmin solo pueden asignar empleados a su propia sucursal
         if (in_array($authUser->role->name, ['manager', 'subadmin'])) {
             $validated['branch_id'] = $authUser->branch_id;
         }
@@ -120,7 +122,6 @@ class UserController extends Controller
             $validated['branch_id'] = $authUser->branch_id;
         }
 
-        // Si se cambió la contraseña, se encripta
         if (!empty($validated['password'])) {
             $validated['password'] = Hash::make($validated['password']);
         } else {
@@ -134,7 +135,7 @@ class UserController extends Controller
 
     /**
      * Eliminar usuario.
-     
+     */
     public function destroy(User $user)
     {
         $authUser = Auth::user();
@@ -147,5 +148,5 @@ class UserController extends Controller
         $user->delete();
 
         return redirect()->back()->with('success', 'Usuario eliminado correctamente.');
-    }*/
+    }
 }

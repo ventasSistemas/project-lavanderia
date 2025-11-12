@@ -26,28 +26,34 @@
                     <div id="contenedor_pos">
                         {{-- Vista de Categorías --}}
                         <div id="vista_categorias">
-                            <div class="row g-3" id="lista_categorias">
-                                @foreach($categorias as $categoria)
-                                <div class="col-md-3 col-sm-6">
-                                    <div class="card text-center categoria-card h-100" data-id="{{ $categoria->id }}">
-                                        <div class="card-body d-flex flex-column justify-content-center align-items-center">
-                                            @if($categoria->image && file_exists(public_path($categoria->image)))
-                                                <img src="{{ asset($categoria->image) }}" 
-                                                    alt="{{ $categoria->name }}" 
-                                                    class="img-fluid rounded mb-2" 
-                                                    style="width: 100px; height: 100px; object-fit: cover;">
-                                            @else
-                                                <img src="{{ asset('images/default_category.png') }}" 
-                                                    alt="Sin imagen" 
-                                                    class="img-fluid rounded mb-2" 
-                                                    style="width: 100px; height: 100px; object-fit: cover;">
-                                            @endif
-                                            <h6 class="fw-semibold mt-2">{{ $categoria->name }}</h6>
-                                        </div>
-                                    </div>
+                            @if($categorias->isEmpty())
+                                <div class="alert alert-secondary text-center">
+                                    <i class="fas fa-exclamation-circle"></i> No hay categorías registradas.
                                 </div>
-                                @endforeach
-                            </div>
+                            @else
+                                <div class="row g-3" id="lista_categorias">
+                                    @foreach($categorias as $categoria)
+                                        <div class="col-md-3 col-sm-6">
+                                            <div class="card text-center categoria-card h-100" data-id="{{ $categoria->id }}">
+                                                <div class="card-body d-flex flex-column justify-content-center align-items-center">
+                                                    @if($categoria->image && file_exists(public_path($categoria->image)))
+                                                        <img src="{{ asset($categoria->image) }}" 
+                                                            alt="{{ $categoria->name }}" 
+                                                            class="img-fluid rounded mb-2" 
+                                                            style="width: 100px; height: 100px; object-fit: cover;">
+                                                    @else
+                                                        <img src="{{ asset('images/default_category.png') }}" 
+                                                            alt="Sin imagen" 
+                                                            class="img-fluid rounded mb-2" 
+                                                            style="width: 100px; height: 100px; object-fit: cover;">
+                                                    @endif
+                                                    <h6 class="fw-semibold mt-2">{{ $categoria->name }}</h6>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @endif
                         </div>
 
                         {{-- Vista de Productos --}}
@@ -57,27 +63,7 @@
                             </button>
 
                             <div class="row g-3" id="productos_categoria">
-                                @foreach($categoria->products as $producto)
-                                <div class="col-md-3 col-sm-6">
-                                    <div class="card text-center service-card h-100" data-id="{{ $producto->id }}">
-                                        <div class="card-body d-flex flex-column justify-content-center align-items-center">
-                                            @if($producto->image && file_exists(public_path($producto->image)))
-                                                <img src="{{ asset($producto->image) }}" 
-                                                    alt="{{ $producto->name }}" 
-                                                    class="img-fluid rounded mb-2" 
-                                                    style="width: 100px; height: 100px; object-fit: cover;">
-                                            @else
-                                                <img src="{{ asset('images/default_product.png') }}" 
-                                                    alt="Sin imagen" 
-                                                    class="img-fluid rounded mb-2" 
-                                                    style="width: 100px; height: 100px; object-fit: cover;">
-                                            @endif
-                                            <h6 class="fw-semibold mt-2">{{ $producto->name }}</h6>
-                                            <small class="text-muted">S/ {{ number_format($producto->price, 2) }}</small>
-                                        </div>
-                                    </div>
-                                </div>
-                                @endforeach
+                                {{-- Este bloque se llenará dinámicamente con JavaScript al hacer clic en una categoría --}}
                             </div>
                         </div>
                     </div>

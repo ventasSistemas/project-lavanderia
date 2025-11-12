@@ -61,10 +61,10 @@
         </li>
         <li>
             <a href="{{ route('admin.complementary-product-categories.index') }}" class="nav-link {{ request()->routeIs('admin.complementary-product-categories.index') ? 'active' : '' }}">
-                <i class="fa-solid fa-dumpster-fire"></i> Prodctos Complement.
+                <i class="fa-solid fa-dumpster-fire"></i> Productos
             </a>
             <a href="{{ route('admin.product-transfers.index') }}" class="nav-link {{ request()->routeIs('admin.product-transfers.index') ? 'active' : '' }}">
-                <i class="fa-solid fa-dumpster-fire"></i> Productos Recepcion
+                <i class="fa-solid fa-dumpster-fire"></i> Trans. de Productos
             </a>
         </li>
         @endif
@@ -96,16 +96,23 @@
                     </a>
                 </li>
 
-                <li>
-                    <a href="{{ route('admin.branches.index') }}" class="nav-link {{ request()->routeIs('admin.branches.index') ? 'active' : '' }}">
-                        <i class="fa-solid fa-building me-2"></i> Sucursales
-                    </a>
-                </li>
-                <li>
-                    <a href="{{ route('admin.payment-methods.index') }}" class="nav-link {{ request()->routeIs('admin.payment-methods.index') ? 'active' : '' }}">
-                        <i class="fa-solid fa-credit-card me-2"></i>  Metodos de Pago
-                    </a>
-                </li>
+                @php
+                    $role = Auth::user()->role->name ?? null;
+                @endphp
+
+                {{-- Mostrar solo para administradores --}}
+                @if($role === 'admin')
+                    <li>
+                        <a href="{{ route('admin.branches.index') }}" class="nav-link {{ request()->routeIs('admin.branches.index') ? 'active' : '' }}">
+                            <i class="fa-solid fa-building me-2"></i> Sucursales
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ route('admin.payment-methods.index') }}" class="nav-link {{ request()->routeIs('admin.payment-methods.index') ? 'active' : '' }}">
+                            <i class="fa-solid fa-credit-card me-2"></i>  Metodos de Pago
+                        </a>
+                    </li>
+                @endif
             @endif
             <li>
                 <a href="{{ route('admin.cash.index') }}" class="nav-link {{ request()->routeIs('admin.cash.index') ? 'active' : '' }}">

@@ -215,7 +215,11 @@ Route::middleware('auth')->group(function () {
             ->name('product-transfers.')
             ->middleware('role:admin,manager')
             ->group(function () {
-                
+
+                // Redirigir a vista Transferencia Productos
+                //Route::get('/', [ProductTransferController::class, 'index'])->name('index');
+                Route::get('/product-notifications/read/{id}', [ProductTransferController::class, 'markAsRead'])->name('product-notifications.read');
+
                 // Listar todas las transferencias
                 Route::get('/', [ProductTransferController::class, 'index'])->name('index');
                 Route::get('/get-products/{category}', [ProductTransferController::class, 'getProducts']);

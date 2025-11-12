@@ -1,20 +1,29 @@
-<!-- views/admin/transfers/index.blade.php -->
 @extends('admin.layouts.app')
 
 @section('content')
-<div class="container mt-4">
-    <h4 class="mb-3 text-primary"><i class="fas fa-exchange-alt"></i> Transferencias de Productos</h4>
+<div class="container-fluid px-3">
+
+    <!-- Encabezado -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="fw-semibold text-dark mb-1">
+                <i class="fas fa-exchange-alt text-primary me-2"></i> Transferencias de Productos
+            </h4>
+            <p class="text-muted small mb-0">Envía productos a sucursales y revisa el historial de transferencias</p>
+        </div>
+    </div>
 
     @if(auth()->user()->hasRole('admin'))
-        <div class="card mb-4 shadow-sm">
+        <!-- Formulario de Envío -->
+        <div class="card shadow-sm border-0 mb-4">
             <div class="card-body">
-                <h6 class="text-secondary mb-3">Enviar Producto a Sucursal</h6>
+                <h6 class="text-secondary mb-3"><i class="fa-solid fa-paper-plane text-primary me-1"></i> Enviar Producto a Sucursal</h6>
                 <form action="{{ route('admin.product-transfers.store') }}" method="POST">
                     @csrf
                     <div id="transfer-items">
                         <div class="row g-2 mb-2 transfer-item">
                             <div class="col-md-3">
-                                <label>Categoría</label>
+                                <label class="form-label">Categoría</label>
                                 <select name="transfers[0][category_id]" class="form-select category-select" required>
                                     <option value="">Seleccione...</option>
                                     @foreach(\App\Models\ComplementaryProductCategory::whereNull('branch_id')->get() as $cat)
@@ -24,14 +33,14 @@
                             </div>
 
                             <div class="col-md-3">
-                                <label>Producto</label>
+                                <label class="form-label">Producto</label>
                                 <select name="transfers[0][product_id]" class="form-select product-select" required>
                                     <option value="">Seleccione categoría primero...</option>
                                 </select>
                             </div>
 
                             <div class="col-md-3">
-                                <label>Sucursal destino</label>
+                                <label class="form-label">Sucursal destino</label>
                                 <select name="transfers[0][branch_id]" class="form-select" required>
                                     <option value="">Seleccione...</option>
                                     @foreach(\App\Models\Branch::all() as $b)
@@ -41,7 +50,7 @@
                             </div>
 
                             <div class="col-md-2">
-                                <label>Cantidad</label>
+                                <label class="form-label">Cantidad</label>
                                 <input type="number" name="transfers[0][quantity]" class="form-control" min="1" required>
                             </div>
 
@@ -67,62 +76,83 @@
         </div>
     @endif
 
-    <div class="card shadow-sm">
-        <div class="card-body">
-            <h6 class="text-secondary mb-3">Historial de Transferencias</h6>
-            <table class="table table-bordered table-striped align-middle">
-                <thead class="table-info">
-                    <tr>
-                        <th>#</th>
-                        <th>Producto</th>
-                        <th>Sucursal</th>
-                        <th>Cantidad</th>
-                        <th>Estado</th>
-                        <th>Enviado Por</th>
-                        <th>Revisado Por</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($transfers as $t)
+    <!-- Buscador -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body py-3">
+            <form method="GET" action="{{ route('admin.product-transfers.index') }}" class="d-flex align-items-center gap-2">
+                <input type="text" name="search" class="form-control"
+                    placeholder="Buscar por producto o sucursal..."
+                    value="{{ request('search') }}" style="max-width: 300px;">
+                <button type="submit" class="btn btn-outline-primary">
+                    <i class="fa-solid fa-search"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tabla -->
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive rounded">
+                <table class="table table-hover table-nowrap align-middle mb-0 rounded">
+                    <thead class="table-primary text-white">
                         <tr>
-                            <td>{{ $t->id }}</td>
-                            <td>{{ $t->product->name ?? '-' }}</td>
-                            <td>{{ $t->branch->name ?? '-' }}</td>
-                            <td>{{ $t->quantity }}</td>
-                            <td>
-                                @if($t->status == 'pending')
-                                    <span class="badge bg-warning text-dark">Pendiente</span>
-                                @elseif($t->status == 'accepted')
-                                    <span class="badge bg-success">Aceptada</span>
-                                @else
-                                    <span class="badge bg-danger">Rechazada</span>
-                                @endif
-                            </td>
-                            <td>{{ $t->sender->name ?? '-' }}</td>
-                            <td>{{ $t->reviewer->name ?? '-' }}</td>
-                            <td>
-                                @if(auth()->user()->hasRole('manager') && $t->status == 'pending')
-                                    <form action="{{ route('admin.product-transfers.approve', $t->id) }}" method="POST" class="d-inline">
-                                        @csrf
-                                        <button class="btn btn-success btn-sm"><i class="fas fa-check"></i></button>
-                                    </form>
-                                    <form action="{{ route('admin.product-transfers.reject', $t->id) }}" method="POST" class="d-inline">
-                                        @csrf
-                                        <button class="btn btn-danger btn-sm"><i class="fas fa-times"></i></button>
-                                    </form>
-                                @else
-                                    <span class="text-muted">-</span>
-                                @endif
-                            </td>
+                            <th class="ps-3">#</th>
+                            <th>Producto</th>
+                            <th>Sucursal</th>
+                            <th>Cantidad</th>
+                            <th>Estado</th>
+                            <th>Enviado Por</th>
+                            <th>Revisado Por</th>
+                            <th class="pe-3 text-end">Acciones</th>
                         </tr>
-                    @empty
-                        <tr>
-                            <td colspan="8" class="text-center text-muted">No hay transferencias registradas</td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @forelse($transfers as $t)
+                            <tr>
+                                <td class="ps-3">{{ $t->id }}</td>
+                                <td>{{ $t->product->name ?? '-' }}</td>
+                                <td>{{ $t->branch->name ?? '-' }}</td>
+                                <td>{{ $t->quantity }}</td>
+                                <td>
+                                    @if($t->status == 'pending')
+                                        <span class="badge bg-warning-subtle text-dark">Pendiente</span>
+                                    @elseif($t->status == 'accepted')
+                                        <span class="badge bg-success-subtle text-success">Aceptada</span>
+                                    @else
+                                        <span class="badge bg-danger-subtle text-danger">Rechazada</span>
+                                    @endif
+                                </td>
+                                <td>{{ $t->sender->full_name ?? '-' }}</td>
+                                <td>{{ $t->reviewer->full_name ?? '-' }}</td>
+                                <td class="text-end pe-3">
+                                    @if(auth()->user()->hasRole('manager') && $t->status == 'pending')
+                                        <form action="{{ route('admin.product-transfers.approve', $t->id) }}" method="POST" class="d-inline">
+                                            @csrf
+                                            <button class="btn btn-success btn-sm"><i class="fas fa-check"></i></button>
+                                        </form>
+                                        <form action="{{ route('admin.product-transfers.reject', $t->id) }}" method="POST" class="d-inline">
+                                            @csrf
+                                            <button class="btn btn-danger btn-sm"><i class="fas fa-times"></i></button>
+                                        </form>
+                                    @else
+                                        <span class="text-muted">-</span>
+                                    @endif
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="8" class="text-center text-muted py-4">No hay transferencias registradas.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Paginación -->
+        <div class="card-footer bg-white text-end">
+            {{ $transfers->appends(['search' => request('search')])->links('pagination::bootstrap-5') }}
         </div>
     </div>
 </div>
@@ -132,7 +162,7 @@
     let itemIndex = 1;
 
     // Clonar fila
-    document.getElementById('add-item').addEventListener('click', function() {
+    document.getElementById('add-item')?.addEventListener('click', function() {
         const container = document.getElementById('transfer-items');
         const firstItem = container.querySelector('.transfer-item');
         const clone = firstItem.cloneNode(true);
@@ -177,7 +207,4 @@
     });
 </script>
 @endpush
-
 @endsection
-
-

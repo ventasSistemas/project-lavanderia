@@ -81,8 +81,8 @@
                         </div>
 
                         @if($category->products->isEmpty())
-                            <div class="alert alert-secondary py-2 px-3 small mb-0 rounded-pill text-center">
-                                <i class="fa-solid fa-circle-info me-2"></i> No hay productos registrados.
+                            <div class="alert alert-secondary text-center">
+                                <i class="fas fa-exclamation-circle"></i> No hay categorías registradas.
                             </div>
                         @else
                             <!-- Tabla de Productos -->
@@ -327,8 +327,8 @@
             </div>
 
         @empty
-            <div class="alert alert-light border text-center py-4 text-muted">
-                <i class="fa-solid fa-circle-info me-2"></i> No hay categorías registradas.
+            <div class="alert alert-secondary text-center">
+                <i class="fas fa-exclamation-circle"></i> No hay categorías registradas.
             </div>
         @endforelse
     </div>

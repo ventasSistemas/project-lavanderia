@@ -73,13 +73,15 @@
 
                 <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="productNotifDropdown" style="width: 400px;">
                     <li class="dropdown-header fw-semibold text-center bg-light">Notificaciones de Productos</li>
+
                     @forelse($productNotifications as $notif)
                         <li>
-                            <div class="dropdown-item small">
-                                <strong>{{ $notif->transfer->product->name }}</strong>
-                                <div class="text-muted">{{ $notif->message }}</div>
+                            <a href="{{ route('admin.product-transfers.product-notifications.read', $notif->id) }} " 
+                            class="dropdown-item small {{ $notif->is_read ? 'text-muted' : 'fw-semibold text-dark' }}">
+                                <strong>{{ $notif->transfer->product->name }}</strong><br>
+                                <span>{{ $notif->message }}</span><br>
                                 <small class="text-muted">{{ $notif->created_at->diffForHumans() }}</small>
-                            </div>
+                            </a>
                         </li>
                     @empty
                         <li><div class="dropdown-item text-muted small text-center">Sin notificaciones recientes</div></li>
@@ -148,8 +150,24 @@
 </nav>
 
 <style>
-.dropdown-menu .dropdown-item .text-muted {
+/* Aplica solo a las notificaciones de productos */
+.dropdown-menu .dropdown-item span {
+    display: block;
     white-space: normal;
     word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+/* Evita que el contenido del dropdown se expanda */
+.dropdown-menu {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+/* Ajusta el texto dentro del enlace para que no se corte */
+.dropdown-item.small {
+    white-space: normal !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
 }
 </style>

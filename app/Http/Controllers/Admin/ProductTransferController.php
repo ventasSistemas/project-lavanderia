@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\ProductTransfer;
+use App\Models\ComplementaryProductCategory;
 use App\Models\ComplementaryProduct;
 use App\Models\User;
 use App\Models\ProductNotification;
@@ -12,13 +13,37 @@ use Illuminate\Support\Facades\Auth;
 
 class ProductTransferController extends Controller
 {
-    public function index()
+    /**
+     * Listado de transferencias con buscador y paginación.
+     */
+    public function index(Request $request)
     {
-        $transfers = ProductTransfer::with(['product', 'branch', 'sender', 'reviewer'])
-            ->latest()
-            ->get();
+        $user = Auth::user();
+        $search = $request->input('search');
 
-        return view('admin.transfers.index', compact('transfers'));
+        $query = ProductTransfer::with(['product', 'branch', 'sender', 'reviewer'])
+            ->orderBy('id', 'desc');
+
+        // Filtrar por sucursal si es manager
+        if ($user->role->name === 'manager') {
+            $query->where('branch_id', $user->branch_id);
+        }
+
+        // Filtro de búsqueda
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->whereHas('product', function ($q2) use ($search) {
+                    $q2->where('name', 'LIKE', "%{$search}%");
+                })->orWhereHas('branch', function ($q3) use ($search) {
+                    $q3->where('name', 'LIKE', "%{$search}%");
+                });
+            });
+        }
+
+        // Paginación
+        $transfers = $query->paginate(10)->appends(['search' => $search]);
+
+        return view('admin.transfers.index', compact('transfers', 'search'));
     }
 
     public function store(Request $request)
@@ -44,10 +69,10 @@ class ProductTransferController extends Controller
                 return back()->with('error', "No hay suficiente stock de {$product->name}.");
             }
 
-            // 🔹 Descontar stock global
+            // Descontar stock global
             $product->decrement('stock', $item['quantity']);
 
-            // 🔹 Registrar transferencia
+            // Registrar transferencia
             $transfer = ProductTransfer::create([
                 'complementary_product_id' => $product->id,
                 'branch_id' => $item['branch_id'],
@@ -56,12 +81,12 @@ class ProductTransferController extends Controller
                 'status' => 'pending',
             ]);
 
-            // 🔹 Buscar el manager de esa sucursal
+            // Buscar el manager de esa sucursal
             $manager = User::where('branch_id', $item['branch_id'])
                 ->whereHas('role', fn($q) => $q->where('name', 'manager'))
                 ->first();
 
-            // 🔹 Registrar notificación para el manager
+            // Registrar notificación para el manager
             if ($manager) {
                 ProductNotification::create([
                     'product_transfer_id' => $transfer->id,
@@ -82,10 +107,15 @@ class ProductTransferController extends Controller
             'reviewed_by' => Auth::id(),
         ]);
 
+        // Marcar notificación como leída
+        ProductNotification::where('product_transfer_id', $transfer->id)
+            ->where('user_id', Auth::id())
+            ->update(['is_read' => true]);
+
         $original = $transfer->product;
 
-        // ✅ Crear categoría en la sucursal si no existe
-        $branchCategory = \App\Models\ComplementaryProductCategory::firstOrCreate(
+        // Crear categoría en la sucursal si no existe
+        $branchCategory = ComplementaryProductCategory::firstOrCreate(
             [
                 'name' => $original->category->name,
                 'branch_id' => $transfer->branch_id,
@@ -96,7 +126,7 @@ class ProductTransferController extends Controller
             ]
         );
 
-        // ✅ Crear producto en la sucursal si no existe
+        // Crear producto en la sucursal si no existe
         $branchProduct = ComplementaryProduct::firstOrCreate(
             [
                 'name' => $original->name,
@@ -111,7 +141,7 @@ class ProductTransferController extends Controller
             ]
         );
 
-        // ✅ Incrementar stock en la sucursal
+        // Incrementar stock en la sucursal
         $branchProduct->increment('stock', $transfer->quantity);
 
         return back()->with('success', 'Transferencia aceptada y producto agregado correctamente a la sucursal.');
@@ -124,7 +154,12 @@ class ProductTransferController extends Controller
             'reviewed_by' => Auth::id(),
         ]);
 
-        // 🔹 Devolver stock global
+        // ✅ Marcar notificación como leída
+        ProductNotification::where('product_transfer_id', $transfer->id)
+            ->where('user_id', Auth::id())
+            ->update(['is_read' => true]);
+
+        // Devolver stock global
         $transfer->product->increment('stock', $transfer->quantity);
 
         return back()->with('info', 'Transferencia rechazada y stock devuelto.');
@@ -134,7 +169,7 @@ class ProductTransferController extends Controller
     {
         $user = Auth::user();
 
-        $query = \App\Models\ComplementaryProduct::where('complementary_product_category_id', $categoryId);
+        $query = ComplementaryProduct::where('complementary_product_category_id', $categoryId);
 
         if ($user->role->name === 'admin') {
             $query->whereNull('branch_id');
@@ -145,5 +180,22 @@ class ProductTransferController extends Controller
         $products = $query->get(['id', 'name', 'stock']);
 
         return response()->json($products);
+    }
+
+    /**
+     * Marca una notificación como leída y redirige a transferencias.
+     */
+    public function markAsRead($id)
+    {
+        $notification = ProductNotification::where('id', $id)
+            ->where('user_id', Auth::id())
+            ->firstOrFail();
+
+        if (!$notification->is_read) {
+            $notification->update(['is_read' => true]);
+        }
+
+        // ✅ Redirige a la ruta index que carga correctamente la vista
+        return redirect()->route('admin.product-transfers.index');
     }
 }
