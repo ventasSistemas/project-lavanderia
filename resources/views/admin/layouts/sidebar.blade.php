@@ -59,6 +59,14 @@
                 <i class="fa-solid fa-tags me-2"></i> Lista de Servicios
             </a>
         </li>
+        @endif
+
+        <!-- Productos -->
+        @php
+            $role = Auth::user()->role->name ?? null;
+        @endphp
+        @if($role !== 'employee')
+        <li class="section-title mt-3">Productos</li>
         <li>
             <a href="{{ route('admin.complementary-product-categories.index') }}" class="nav-link {{ request()->routeIs('admin.complementary-product-categories.index') ? 'active' : '' }}">
                 <i class="fa-solid fa-dumpster-fire"></i> Productos

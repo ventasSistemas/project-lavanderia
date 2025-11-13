@@ -68,6 +68,7 @@ Route::middleware('auth')->group(function () {
             Route::post('/store', [CustomerController::class, 'store'])->name('store');
             Route::put('/update/{customer}', [CustomerController::class, 'update'])->name('update');
             Route::delete('/delete/{customer}', [CustomerController::class, 'destroy'])->name('destroy');
+            Route::get('/search', [CustomerController::class, 'search'])->name('search');
         });
 
         // Service categories
@@ -217,7 +218,6 @@ Route::middleware('auth')->group(function () {
             ->group(function () {
 
                 // Redirigir a vista Transferencia Productos
-                //Route::get('/', [ProductTransferController::class, 'index'])->name('index');
                 Route::get('/product-notifications/read/{id}', [ProductTransferController::class, 'markAsRead'])->name('product-notifications.read');
 
                 // Listar todas las transferencias

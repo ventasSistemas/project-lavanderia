@@ -6,8 +6,8 @@
 <div class="container-fluid py-3">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h4 class="fw-bold mb-0">Detalle de la Orden #{{ $order->id }}</h4>
-        <a href="{{ route('admin.orders.index') }}" class="btn btn-secondary">
-            <i class="bi bi-arrow-left"></i> Volver
+        <a href="{{ route('admin.orders.index') }}" class="btn btn-outline-secondary">
+            <i class="fa-solid fa-arrow-left me-1"></i></i> Volver
         </a>
     </div>
 

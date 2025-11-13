@@ -113,4 +113,20 @@ class CustomerController extends Controller
 
         return redirect()->back()->with('success', 'Cliente actualizado correctamente.');
     }
+
+    /**
+     * Buscador de Clientes
+     */
+    public function search(Request $request)
+    {
+        $term = $request->get('term', '');
+
+        $customers = Customer::query()
+            ->where('full_name', 'LIKE', "%{$term}%")
+            ->orWhere('document_number', 'LIKE', "%{$term}%")
+            ->limit(10)
+            ->get(['id', 'full_name']);
+
+        return response()->json($customers);
+    }
 }

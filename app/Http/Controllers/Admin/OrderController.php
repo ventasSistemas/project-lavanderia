@@ -62,13 +62,21 @@ class OrderController extends Controller
 
     public function create()
     {
+        $user = Auth::user();
         $customers = Customer::all();
         $branches = Branch::all();
         $statuses = OrderStatus::all();
         $categories = ServiceCategory::with('services')->get();
         $paymentMethods = PaymentMethod::with('submethods')->get();
 
-        return view('admin.orders.create', compact('customers', 'branches', 'statuses', 'categories', 'paymentMethods'));
+        return view('admin.orders.create', compact(
+            'customers',
+            'branches',
+            'statuses',
+            'categories',
+            'paymentMethods',
+            'user'
+        ));
     }
 
     /** 
@@ -197,6 +205,114 @@ class OrderController extends Controller
         }
     }
 
+    public function edit(Order $order)
+    {
+        $order->load(['items.service', 'customer', 'branch', 'status']);
+
+        $user = Auth::user();                
+        $customers = Customer::all();
+        $branches = Branch::all();
+        $services = Service::all();
+        $statuses = OrderStatus::all();
+        $categories = ServiceCategory::with('services')->get();
+        $paymentMethods = PaymentMethod::with('submethods')->get();
+
+        // Calculamos los totales a mostrar
+        $order->subtotal = $order->total_amount ?? 0;
+        $order->total = $order->final_total ?? ($order->total_amount - $order->discount + $order->tax);
+
+        return view('admin.orders.edit', compact(
+            'order',
+            'customers',
+            'branches',
+            'services',
+            'statuses',
+            'categories',
+            'paymentMethods',
+            'user'              
+        ));
+    }
+
+    /**
+     * Actualizar
+    */
+    public function update(Request $request, Order $order)
+    {
+        $request->validate([
+            'customer_id' => 'required|exists:customers,id',
+            'branch_id' => 'required|exists:branches,id',
+            'order_status_id' => 'required|exists:order_status,id',
+            'payment_status' => 'required|in:pending,paid,partial',
+            'payment_method_id' => 'nullable|exists:payment_methods,id',
+            'payment_submethod_id' => 'nullable|exists:payment_submethods,id',
+            'payment_amount' => 'nullable|numeric|min:0',
+            'discount' => 'nullable|numeric|min:0',
+            'tax' => 'nullable|numeric|min:0',
+            'delivery_date' => 'nullable|date|after_or_equal:receipt_date',
+            'notes' => 'nullable|string|max:500',
+            'order_items' => 'nullable|array',
+            'order_items.*.service_id' => 'required|exists:services,id',
+            'order_items.*.quantity' => 'required|integer|min:1',
+            'order_items.*.unit_price' => 'required|numeric|min:0',
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+            // Recalcular totales
+            $total = 0;
+            if ($request->has('order_items')) {
+                foreach ($request->order_items as $item) {
+                    $total += $item['quantity'] * $item['unit_price'];
+                }
+            } else {
+                $total = $order->items->sum(fn($i) => $i->quantity * $i->unit_price);
+            }
+
+            $discount = $request->discount ?? 0;
+            $tax = $request->tax ?? 0;
+            $finalTotal = $total - $discount + $tax;
+
+            // Actualizar datos principales
+            $order->update([
+                'customer_id' => $request->customer_id,
+                'branch_id' => $request->branch_id,
+                'order_status_id' => $request->order_status_id,
+                'payment_method_id' => $request->payment_method_id,
+                'payment_submethod_id' => $request->payment_submethod_id,
+                'payment_amount' => $request->payment_amount ?? 0,
+                'discount' => $discount,
+                'tax' => $tax,
+                'payment_status' => $request->payment_status,
+                'delivery_date' => $request->delivery_date,
+                'notes' => $request->notes,
+                'total_amount' => $total,
+                'final_total' => $finalTotal,
+            ]);
+
+            // 🔹 Actualizar los servicios
+            if ($request->has('order_items')) {
+                $order->items()->delete();
+                foreach ($request->order_items as $item) {
+                    $order->items()->create([
+                        'service_id' => $item['service_id'],
+                        'quantity' => $item['quantity'],
+                        'unit_price' => $item['unit_price'],
+                    ]);
+                }
+            }
+
+            DB::commit();
+
+            return redirect()
+                ->route('admin.orders.index')
+                ->with('success', 'Orden actualizada exitosamente.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Error al actualizar la orden: ' . $e->getMessage());
+        }
+    }
+
     /**
      * Obtener el siguiente número de orden de lavandería
      */
@@ -301,103 +417,6 @@ class OrderController extends Controller
             ->get();
 
         return view('admin.orders.change-status', compact('statuses', 'orders'));
-    }
-
-    public function edit(Order $order)
-    {
-        $order->load(['items.service', 'customer', 'branch', 'status']);
-
-        $customers = Customer::all();
-        $branches = Branch::all();
-        $services = Service::all();
-        $statuses = OrderStatus::all();
-        $categories = ServiceCategory::with('services')->get();
-        $paymentMethods = PaymentMethod::with('submethods')->get();
-
-        // Calculamos los totales a mostrar
-        $order->subtotal = $order->total_amount ?? 0;
-        $order->total = $order->final_total ?? ($order->total_amount - $order->discount + $order->tax);
-
-        return view('admin.orders.edit', compact(
-            'order',
-            'customers',
-            'branches',
-            'services',
-            'statuses',
-            'categories',
-            'paymentMethods'
-        ));
-    }
-
-    public function update(Request $request, Order $order)
-    {
-        $request->validate([
-            'order_status_id' => 'required|exists:order_status,id', 
-            'payment_method_id' => 'required|exists:payment_methods,id',
-            'payment_status' => 'required|in:pending,paid,partial',
-            'delivery_date' => 'nullable|date|after_or_equal:receipt_date',
-            'discount' => 'nullable|numeric|min:0',
-            'tax' => 'nullable|numeric|min:0',
-            'notes' => 'nullable|string|max:500',
-            'order_items' => 'nullable|array',
-        ]);
-
-        DB::beginTransaction();
-
-        try {
-            // Primero actualizamos los datos generales de la orden
-            $order->update([
-                'order_status_id' => $request->order_status_id,
-                'payment_status' => $request->payment_status,
-                'payment_method_id' => $request->payment_method_id,
-                'payment_submethod_id' => $request->payment_submethod_id,
-                'payment_returned' => $request->payment_returned ?? 0,
-                'delivery_date' => $request->delivery_date,
-                'discount' => $request->discount ?? 0,
-                'tax' => $request->tax ?? 0,
-                'notes' => $request->notes,
-            ]);
-
-            $total = 0;
-
-            // Si vienen items actualizados desde el formulario
-            if ($request->has('order_items')) {
-                // Eliminamos los items anteriores
-                $order->items()->delete();
-
-                // Creamos los nuevos items
-                foreach ($request->order_items as $item) {
-                    $subtotal = $item['quantity'] * $item['unit_price'];
-                    $total += $subtotal;
-
-                    $order->items()->create([
-                        'service_id' => $item['service_id'],
-                        'quantity' => $item['quantity'],
-                        'unit_price' => $item['unit_price'],
-                    ]);
-                }
-            } else {
-                // Si no se enviaron items, mantenemos el total actual
-                $total = $order->items->sum(fn($i) => $i->quantity * $i->unit_price);
-            }
-
-            // Recalculamos totales finales
-            $finalTotal = $total - $order->discount + $order->tax;
-
-            $order->update([
-                'total_amount' => $total,
-                'final_total' => $finalTotal,
-            ]);
-
-            DB::commit();
-
-            return redirect()
-                ->route('admin.orders.index')
-                ->with('success', 'Orden actualizada con éxito.');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return back()->with('error', 'Error al actualizar la orden: ' . $e->getMessage());
-        }
     }
 
     public function destroy(Order $order)

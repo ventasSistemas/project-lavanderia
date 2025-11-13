@@ -131,155 +131,230 @@
     </div>
 </div>
 
-<!-- Modal Confirmar Venta (Diseño Moderno sin Tabla) -->
+<!-- Modal Confirmar Venta (Diseño Moderno Premium) -->
 <div class="modal fade" id="modalConfirmarVenta" tabindex="-1" aria-labelledby="modalConfirmarVentaLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-altura-custom">
-    <div class="modal-content border-0 shadow-lg rounded-4">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
       
-      <!-- Encabezado -->
-      <div class="modal-header bg-gradient bg-primary text-white rounded-top-4">
-        <h5 class="modal-title fw-bold" id="modalConfirmarVentaLabel">
-          <i class="fas fa-receipt me-2"></i> Resumen de la Venta
-        </h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      <!-- HEADER -->
+      <div class="modal-header bg-info bg-opacity-10 border-0 py-3">
+        <div class="d-flex align-items-center">
+          <div class="bg-info bg-opacity-25 text-info rounded-circle d-flex align-items-center justify-content-center me-2" style="width:40px; height:40px;">
+            <i class="fas fa-receipt"></i>
+          </div>
+          <div>
+            <h5 class="modal-title fw-bold text-info mb-0" id="modalConfirmarVentaLabel">Resumen de la Venta</h5>
+            <small class="text-muted">Verifica los datos antes de registrar</small>
+          </div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
 
-      <!-- Cuerpo -->
-      <div class="modal-body p-4">
-        <!-- Información de la Orden -->
-        <div class="mb-4">
-          <div class="d-flex justify-content-between flex-wrap">
-            <div>
-              <h6 class="text-muted mb-1">Número de Orden</h6>
-              <p class="fw-semibold text-dark mb-0" id="numeroOrdenModal">ORD-0000</p>
-            </div>
-            <div>
-              <h6 class="text-muted mb-1">Fecha de Registro</h6>
-              <p class="fw-semibold text-dark mb-0" id="fechaOrdenModal">{{ date('Y-m-d') }}</p>
+      <!-- BODY -->
+      <div class="modal-body bg-body-tertiary p-4">
+
+        <!-- ENCABEZADO DE ORDEN -->
+        <div class="card mb-4">
+          <div class="card-body py-3">
+            <div class="d-flex justify-content-between flex-wrap align-items-center">
+              <div>
+                <h6 class="text-muted mb-1">Número de Orden</h6>
+                <p class="fw-semibold text-dark mb-0" id="numeroOrdenModal">ORD-0000</p>
+              </div>
+              <div>
+                <h6 class="text-muted mb-1">Fecha de Registro</h6>
+                <p class="fw-semibold text-dark mb-0" id="fechaOrdenModal">{{ date('Y-m-d') }}</p>
+              </div>
             </div>
           </div>
-          <hr class="my-3">
         </div>
 
-        <!-- Lista de Productos -->
-        <div id="lista_detalles_modal" class="px-2">
-          <!-- Aquí se agregan los productos dinámicamente -->
+        <!-- LISTA DE PRODUCTOS -->
+        <div class="card mb-4">
+          <div class="card-header border-0 bg-white py-2">
+            <h6 class="fw-semibold mb-0 text-secondary">
+              <i class="fas fa-box-open me-1"></i> Detalle de Productos
+            </h6>
+          </div>
+          <div class="card-body px-3 py-2" id="lista_detalles_modal">
+            <!-- Productos se generan dinámicamente -->
+          </div>
         </div>
 
-        <!-- Total -->
-        <!-- Sección de Totales Detallados -->
-        <div class="mt-3">
+        <!-- TOTALES -->
+        <div class="card mb-4">
+          <div class="card-body py-3">
             <div class="d-flex justify-content-between">
-                <span>Subtotal:</span>
-                <span id="subtotal_modal">S/ 0.00</span>
+              <span>Subtotal:</span>
+              <span id="subtotal_modal" class="fw-semibold">S/ 0.00</span>
             </div>
             <div class="d-flex justify-content-between">
-                <span>Descuento:</span>
-                <span id="descuento_modal">S/ 0.00</span>
+              <span>Descuento:</span>
+              <span id="descuento_modal" class="fw-semibold text-danger">S/ 0.00</span>
             </div>
-            <!--
-            <div class="d-flex justify-content-between">
-                <span>Impuesto:</span>
-                <span id="impuesto_modal">S/ 0.00</span>
-            </div>-->
             <div class="d-flex justify-content-between fw-bold border-top mt-2 pt-2">
-                <span>Total:</span>
-                <span id="total_modal">S/ 0.00</span>
+              <span>Total:</span>
+              <span id="total_modal" class="fw-bold text-success">S/ 0.00</span>
             </div>
-            <hr>
-            <!-- Selección de método de pago -->
-            <div class="mt-3">
-            <label class="fw-semibold">Método de pago:</label>
-            <select id="metodoPagoSelect" class="form-select">
-                <option value="">Seleccione un método</option>
-            </select>
-            </div>
-
-            <!-- Submétodo -->
-            <div class="mt-3">
-            <label class="fw-semibold">Submétodo:</label>
-            <select id="submetodoPagoSelect" class="form-select">
-                <option value="">Seleccione un submétodo</option>
-            </select>
-            </div>
-
-            <!-- Monto recibido -->
-            <div class="mt-3">
-            <label class="fw-semibold">Monto recibido:</label>
-            <input type="number" id="montoRecibidoInput" class="form-control" min="0" step="0.01" placeholder="Ingrese monto recibido">
-            </div>
-
-            <!-- Vuelto dinámico -->
-            <div class="d-flex justify-content-between mt-2">
-            <span>Vuelto:</span>
-            <span id="vuelto_modal" class="fw-bold text-success">S/ 0.00</span>
-            </div>
-
-            <!--
-            <div class="d-flex justify-content-between">
-                <span>Submétodo:</span>
-                <span id="submetodo_pago_modal">---</span>
-            </div>-->
+          </div>
         </div>
+
+        <!-- MÉTODO DE PAGO -->
+        <div class="card border-0 shadow-sm mb-2">
+          <div class="card-body">
+            <div class="mb-3">
+              <label class="fw-semibold">Método de pago:</label>
+              <select id="metodoPagoSelect" class="form-select">
+                <option value="">Seleccione un método</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="fw-semibold">Submétodo:</label>
+              <select id="submetodoPagoSelect" class="form-select">
+                <option value="">Seleccione un submétodo</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="fw-semibold">Monto recibido:</label>
+              <input type="number" id="montoRecibidoInput" class="form-control" min="0" step="0.01" placeholder="Ingrese monto recibido">
+            </div>
+            <div class="d-flex justify-content-between">
+              <span>Vuelto:</span>
+              <span id="vuelto_modal" class="fw-bold text-success">S/ 0.00</span>
+            </div>
+          </div>
+        </div>
+
       </div>
 
-      <!-- Pie -->
-      <div class="modal-footer bg-light rounded-bottom-4">
-        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
-          <i class="fas fa-arrow-left"></i> Volver
+      <!-- FOOTER -->
+      <div class="modal-footer bg-white border-0 py-3">
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">
+          <i class="fas fa-arrow-left me-1"></i> Volver
         </button>
-        <button type="button" class="btn btn-success" id="btnConfirmarVentaFinal">
-          <i class="fas fa-check-circle"></i> Confirmar y Registrar
+        <button type="button" class="btn btn-success btn-sm px-4 shadow-sm" id="btnConfirmarVentaFinal">
+          <i class="fas fa-check-circle me-1"></i> Confirmar y Registrar
         </button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Modal Detalle Orden de Servicio -->
+
+<!-- Modal Detalle Orden de Servicio (Diseño Premium Similar) -->
 <div class="modal fade" id="modalDetalleOrdenServicio" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered">
-    <div class="modal-content border-0 shadow-lg rounded-4">
-      <div class="modal-header bg-info text-white rounded-top-4">
-        <h5 class="modal-title fw-bold">
-          <i class="fas fa-soap me-2"></i> Detalle de la Orden de Servicio
-        </h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+    <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+
+      <!-- HEADER -->
+      <div class="modal-header bg-info bg-opacity-10 border-0 py-3">
+        <div class="d-flex align-items-center">
+          <div class="bg-info bg-opacity-25 text-info rounded-circle d-flex align-items-center justify-content-center me-2" style="width:40px; height:40px;">
+            <i class="fas fa-soap"></i>
+          </div>
+          <div>
+            <h5 class="modal-title fw-bold text-info mb-0">Detalle de la Orden de Servicio</h5>
+            <small class="text-muted">Revisa y actualiza los datos necesarios</small>
+          </div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
 
-      <div class="modal-body">
-        <div id="detalleOrdenServicioBody"></div>
+      <!-- BODY -->
+      <div class="modal-body bg-body-tertiary p-4" id="detalleOrdenServicioBody">
+        <div class="card mb-4">
+          <div class="card-header border-0 bg-white py-2">
+            <h6 class="fw-semibold mb-0 text-secondary">
+              <i class="fas fa-clipboard-list me-1"></i> Información del Servicio
+            </h6>
+          </div>
+          <div class="card-body">
+            <div id="detalleServicioContenido">
+              <!-- Contenido generado dinámicamente por JavaScript -->
+            </div>
+          </div>
+        </div>
 
-        <!-- Entregado por -->
-        <div class="mt-3 p-2 bg-light rounded border">
-          <p class="mb-0 fw-semibold text-secondary">
-            <i class="fas fa-user-check text-success me-1"></i>
-            <span id="entregadoPorTexto">Aún no entregado</span>
-          </p>
+        <div class="card mb-4">
+          <div class="card-header border-0 bg-white py-2">
+            <h6 class="fw-semibold mb-0 text-secondary">
+              <i class="fas fa-user me-1"></i> Datos del Cliente
+            </h6>
+          </div>
+          <div class="card-body">
+            <div id="detalleClienteContenido">
+              <!-- Datos del cliente -->
+            </div>
+          </div>
+        </div>
+
+        <div class="card mb-3">
+          <div class="card-header border-0 bg-white py-2">
+            <h6 class="fw-semibold mb-0 text-secondary">
+              <i class="fas fa-cogs me-1"></i> Actualizaciones
+            </h6>
+          </div>
+          <div class="card-body">
+            <div id="detalleActualizaciones">
+              <!-- Campos para editar estado, observaciones, etc -->
+            </div>
+          </div>
         </div>
       </div>
 
-      <div class="modal-footer bg-light rounded-bottom-4">
-        <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
-        <button class="btn btn-success" id="btnActualizarOrdenServicio">
-          <i class="fas fa-save"></i> Guardar cambios
+      <!-- FOOTER -->
+      <div class="modal-footer bg-white border-0 py-3">
+        <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">
+          <i class="bi bi-x-circle me-1"></i> Cerrar
+        </button>
+        <button class="btn btn-success btn-sm px-4 shadow-sm" id="btnActualizarOrdenServicio">
+          <i class="fas fa-save me-1"></i> Guardar cambios
         </button>
       </div>
+
     </div>
   </div>
 </div>
 
-
+<!-- ESTILOS PERSONALIZADOS -->
 <style>
-.modal-altura-custom {
-    max-width: 600px; 
-    height: 90vh;   
+.modal-content {
+  font-size: 0.95rem;
+  background-color: #f9fafb;
 }
-
-.modal-altura-custom .modal-content {
-  height: 100%;
+.card {
+  background: white;
+  border: 0;
+  border-radius: 1rem;
+  box-shadow: 0 0.25rem 0.75rem rgba(0,0,0,0.05);
+  transition: all 0.2s ease-in-out;
 }
-
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.08);
+}
+.card-header {
+  background: white;
+  border: 0;
+  padding: 0.8rem 1rem;
+}
+.card-header h6 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+.form-select,
+.form-control {
+  border-radius: 0.5rem;
+  font-size: 0.9rem;
+}
+label {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+.bg-body-tertiary {
+  background-color: #f8f9fa !important;
+}
 </style>
 
 
