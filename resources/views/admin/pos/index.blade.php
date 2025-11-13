@@ -131,7 +131,7 @@
     </div>
 </div>
 
-<!-- Modal Confirmar Venta (Diseño Moderno Premium) -->
+<!-- Modal Confirmar Venta -->
 <div class="modal fade" id="modalConfirmarVenta" tabindex="-1" aria-labelledby="modalConfirmarVentaLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-lg">
     <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
@@ -215,9 +215,15 @@
               </select>
             </div>
             <div class="mb-3">
-              <label class="fw-semibold">Monto recibido:</label>
-              <input type="number" id="montoRecibidoInput" class="form-control" min="0" step="0.01" placeholder="Ingrese monto recibido">
+                <label class="fw-semibold"><i class="fa-solid fa-money-check-dollar me-1"></i> Monto Pagado:</label>
+                <div class="input-group">
+                    <input type="number" id="montoRecibidoInput" class="form-control" min="0" step="0.01" placeholder="Ingrese monto recibido">
+                    <button class="btn btn-outline-success" type="button" id="btnPagoCompleto">
+                        <i class="fas fa-coins"></i> Pago Completo
+                    </button>
+                </div>
             </div>
+
             <div class="d-flex justify-content-between">
               <span>Vuelto:</span>
               <span id="vuelto_modal" class="fw-bold text-success">S/ 0.00</span>
@@ -241,7 +247,7 @@
 </div>
 
 
-<!-- Modal Detalle Orden de Servicio (Diseño Premium Similar) -->
+<!-- Modal Detalle Orden de Servicio -->
 <div class="modal fade" id="modalDetalleOrdenServicio" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
@@ -366,6 +372,65 @@ label {
 
 let carrito = [];
 let ordenSeleccionada = null;
+
+/* Ingresar Monto Exacto */
+document.addEventListener('DOMContentLoaded', () => {
+  const montoRecibidoInput = document.getElementById('montoRecibidoInput');
+  const totalModal = document.getElementById('total_modal');
+  const vueltoModal = document.getElementById('vuelto_modal');
+  const btnPagoCompleto = document.getElementById('btnPagoCompleto');
+  const btnConfirmarVentaFinal = document.getElementById('btnConfirmarVentaFinal');
+
+  let totalActual = 0;
+
+  // Mantener sincronizado el total
+  const observer = new MutationObserver(() => {
+    const totalText = totalModal.textContent.replace('S/', '').trim();
+    totalActual = parseFloat(totalText) || 0;
+  });
+  observer.observe(totalModal, { childList: true });
+
+  // "Pago Completo" autocompleta el monto
+  btnPagoCompleto.addEventListener('click', () => {
+    montoRecibidoInput.value = totalActual.toFixed(2);
+    const vuelto = parseFloat(montoRecibidoInput.value) - totalActual;
+    vueltoModal.textContent = `S/ ${vuelto.toFixed(2)}`;
+  });
+
+  // Calcular vuelto al escribir manualmente
+  montoRecibidoInput.addEventListener('input', () => {
+    const recibido = parseFloat(montoRecibidoInput.value) || 0;
+    const vuelto = recibido - totalActual;
+    vueltoModal.textContent = `S/ ${vuelto.toFixed(2)}`;
+  });
+
+  // Validar antes de registrar la venta
+  btnConfirmarVentaFinal.addEventListener('click', (e) => {
+    const recibido = parseFloat(montoRecibidoInput.value) || 0;
+
+    if (recibido <= 0) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Monto requerido',
+        text: 'Debe ingresar el monto pagado antes de confirmar la venta.',
+      });
+      e.stopImmediatePropagation();
+      return;
+    }
+
+    if (recibido < totalActual) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Monto insuficiente',
+        text: `El monto ingresado (S/ ${recibido.toFixed(2)}) es menor al total (S/ ${totalActual.toFixed(2)}).`,
+      });
+      e.stopImmediatePropagation();
+      return;
+    }
+
+    // Si pasa las validaciones, se continúa normalmente (fetch, etc.)
+  });
+});
 
 /*Buscar Categoria*/
 document.addEventListener("DOMContentLoaded", () => {
@@ -640,6 +705,14 @@ async function mostrarModalDetalleOrden(data) {
     const metodosResponse = await fetch('/admin/pos/payment-methods');
     const metodos = await metodosResponse.json();
 
+    // --- Si el estado de pago está pendiente, marcar el primer método y submétodo ---
+    if ((data.payment_status?.toLowerCase() || 'pending') === 'pending' && metodos.length > 0) {
+        data.payment_method_id = metodos[0].id;
+        if (metodos[0].submethods?.length > 0) {
+            data.payment_submethod_id = metodos[0].submethods[0].id;
+        }
+    }
+
     // --- Estado actual ---
     const estadoActual = data.order_status?.toLowerCase() || 'pendiente';
 
@@ -784,86 +857,12 @@ async function mostrarModalDetalleOrden(data) {
             <div class="input-group">
                 <input type="number" id="montoPagadoInput" class="form-control" 
                     min="0" value="${Number(data.payment_amount || 0).toFixed(2)}" step="0.01">
-                <button class="btn btn-outline-success" type="button" id="btnPagoCompleto">
+                <button class="btn btn-outline-success" type="button" id="btnPagoCompletoServicio">
                     <i class="fas fa-coins"></i> Pago Completo
                 </button>
             </div>
         </div>
     `;
-
-    // --- Campo dinámico para pago restante si está incompleto ---
-    if (data.payment_status === 'partial') {
-        contenedor.innerHTML += `
-            <div class="mt-3" id="pagoRestanteContainer">
-                <label class="fw-semibold text-danger">
-                    <i class="fas fa-hand-holding-dollar me-1"></i> Ingresar pago restante:
-                </label>
-                <input type="number" id="montoRestanteInput" class="form-control" 
-                    min="0" max="${restante}" step="0.01" placeholder="Ejemplo: ${restante.toFixed(2)}">
-                <div class="form-text text-muted">
-                    El monto restante será registrado en caja y cambiará el estado a 'Pagado completo'.
-                </div>
-            </div>
-        `;
-
-            // --- Detectar si el pago restante completa el total ---
-            const montoPagadoInput = document.getElementById('montoPagadoInput');
-            const montoRestanteInput = document.getElementById('montoRestanteInput');
-            const estadoPagoSelect = document.getElementById('estadoPagoSelect');
-            const estadoOrdenSelect = document.getElementById('estadoOrdenSelect');
-            const btnPagoCompleto = document.getElementById('btnPagoCompleto');
-
-            // Si el usuario ingresa un monto restante
-            montoRestanteInput?.addEventListener('input', () => {
-                const total = parseFloat(data.final_total) || 0;
-                const pagoActual = parseFloat(montoPagadoInput.value) || 0;
-                const restanteNuevo = parseFloat(montoRestanteInput.value) || 0;
-                const suma = pagoActual + restanteNuevo;
-
-                if (suma >= total) {
-                    estadoPagoSelect.value = 'paid';
-                    // Si el estado actual es terminado, lo pasamos a entregado automáticamente
-                    if (estadoOrdenSelect.options.length > 1) {
-                        const entregado = Array.from(estadoOrdenSelect.options).find(
-                            opt => opt.textContent.toLowerCase() === 'entregado'
-                        );
-                        if (entregado) estadoOrdenSelect.value = entregado.value;
-                    }
-
-                    Swal.fire({
-                        icon: 'info',
-                        title: 'Pago completo detectado',
-                        text: 'El monto total ha sido cubierto. La orden se marcará como entregada.',
-                        timer: 2000,
-                        showConfirmButton: false
-                    });
-                } else {
-                    estadoPagoSelect.value = 'partial';
-                }
-            });
-
-            // Si el usuario presiona el botón “Pago Completo”
-            btnPagoCompleto.addEventListener('click', () => {
-                montoPagadoInput.value = parseFloat(data.final_total).toFixed(2);
-                if (montoRestanteInput) montoRestanteInput.value = '';
-                estadoPagoSelect.value = 'paid';
-
-                if (estadoOrdenSelect.options.length > 1) {
-                    const entregado = Array.from(estadoOrdenSelect.options).find(
-                        opt => opt.textContent.toLowerCase() === 'entregado'
-                    );
-                    if (entregado) estadoOrdenSelect.value = entregado.value;
-                }
-
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Pago completado',
-                    text: 'El monto total ha sido cubierto y la orden será marcada como entregada.',
-                    timer: 1800,
-                    showConfirmButton: false
-                });
-            });
-    }
 
     // --- Función auxiliar ---
     function calcularVuelto() {
@@ -934,29 +933,174 @@ async function mostrarModalDetalleOrden(data) {
             : '<option value="">-- Sin submétodos --</option>';
     });
 
-    // --- Actualización dinámica de montos ---
+    // --- Control de comportamiento según estado de pago ---
     const modal = new bootstrap.Modal(document.getElementById('modalDetalleOrdenServicio'));
     const inputMontoPagado = document.getElementById('montoPagadoInput');
     const estadoPagoSelect = document.getElementById('estadoPagoSelect');
     const btnPagoCompleto = document.getElementById('btnPagoCompleto');
+    const estadoPago = data.payment_status?.toLowerCase() || 'pending';
+    const vueltoSpan = document.querySelector('#vuelto_modal');
 
+    // SOLUCIÓN: el select debe recibir el estado actual
+    estadoPagoSelect.value = estadoPago;
+
+    let inputPagoRestante, btnPagoRestante;
+
+    // --- Crear campo de pago restante si el estado es INCOMPLETO ---
+    if (estadoPago === 'partial') {
+        const contenedorPago = document.createElement('div');
+        contenedorPago.classList.add('mt-3');
+        contenedorPago.innerHTML = `
+            <label class="fw-semibold text-danger">
+                <i class="fas fa-hand-holding-dollar me-1"></i> Ingresar pago restante:
+            </label>
+            <div class="input-group">
+                <input type="number" id="montoRestanteInput" class="form-control"
+                    min="0" max="${restante}" step="0.01"
+                    placeholder="Ejemplo: ${restante.toFixed(2)}">
+                <button class="btn btn-outline-warning" type="button" id="btnPagoRestante">
+                    <i class="fas fa-hand-holding-dollar"></i> Pago Restante
+                </button>
+            </div>
+            <div class="form-text text-muted">
+                Si se completa el pago restante, la orden se marcará como Pagado Completo.
+            </div>
+        `;
+        contenedor.appendChild(contenedorPago);
+        inputPagoRestante = contenedorPago.querySelector('#montoRestanteInput');
+        btnPagoRestante = contenedorPago.querySelector('#btnPagoRestante');
+    }
+
+    // --- Aplicar comportamiento según estado ---
+    switch (estadoPago) {
+
+        /** ESTADO: PENDING **/
+        case 'pending':
+            inputMontoPagado.disabled = false;
+            btnPagoCompletoServicio.disabled = false;
+
+            if (inputPagoRestante) inputPagoRestante.disabled = true;
+            if (btnPagoRestante) btnPagoRestante.disabled = true;
+            break;
+
+        /** ESTADO: PARTIAL **/
+        case 'partial':
+            inputMontoPagado.disabled = true;
+            btnPagoCompletoServicio.disabled = true;
+
+            if (inputPagoRestante) inputPagoRestante.disabled = false;
+            if (btnPagoRestante) btnPagoRestante.disabled = false;
+            break;
+
+        /** ESTADO: PAID **/
+        case 'paid':
+            inputMontoPagado.disabled = true;
+            btnPagoCompletoServicio.disabled = true;
+
+            if (inputPagoRestante) inputPagoRestante.disabled = true;
+            if (btnPagoRestante) btnPagoRestante.disabled = true;
+            break;
+    }
+
+    // --- Lógica del botón "Pago Completo" (con depuración) ---
     if (btnPagoCompleto) {
         btnPagoCompleto.addEventListener('click', () => {
-            inputMontoPagado.value = Number(data.final_total || 0).toFixed(2);
+
+            const total = parseFloat(data.final_total || 0);
+
+            if (!total || total <= 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Sin total definido',
+                    text: 'No se encontró un monto final para esta orden.',
+                    timer: 1800,
+                    showConfirmButton: false
+                });
+                return;
+            }
+
+
+            // Solo funciona si el estado actual es pendiente
+            if (estadoPago !== 'pending') {
+                //if (estadoPagoSelect.value !== 'pending') {}
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Acción no permitida',
+                    text: 'El botón "Pago Completo" solo se puede usar cuando el pago está pendiente.',
+                    timer: 1800,
+                    showConfirmButton: false
+                });
+                return;
+            }
+
+            inputMontoPagado.value = total.toFixed(2);
+
+            // Disparar el evento para actualizar dinámicamente el estado
             inputMontoPagado.dispatchEvent(new Event('input'));
+
+            estadoPagoSelect.value = 'paid';
+
+            if (vueltoSpan) {
+                const vuelto = parseFloat(inputMontoPagado.value || 0) - total;
+                vueltoSpan.textContent = `S/ ${Math.max(0, vuelto).toFixed(2)}`;
+            }
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Pago completado',
+                text: `El monto total de S/ ${total.toFixed(2)} ha sido cubierto.`,
+                timer: 1600,
+                showConfirmButton: false
+            });
+
+            // Bloquea los campos luego del pago completo
+            inputMontoPagado.disabled = true;
+            btnPagoCompleto.disabled = true;
+            if (inputPagoRestante) inputPagoRestante.disabled = true;
+            if (btnPagoRestante) btnPagoRestante.disabled = true;
         });
     }
 
+    // --- Cambio dinámico de estado al escribir ---
     inputMontoPagado.addEventListener('input', () => {
-        const monto = parseFloat(inputMontoPagado.value) || 0;
-        const total = parseFloat(data.final_total) || 0;
+    const monto = parseFloat(inputMontoPagado.value) || 0;
+    const total = parseFloat(data.final_total) || 0;
 
-        if (monto === 0) estadoPagoSelect.value = 'pending';
-        else if (monto < total) estadoPagoSelect.value = 'partial';
-        else estadoPagoSelect.value = 'paid';
+    if (monto === 0) estadoPagoSelect.value = 'pending';
+    else if (monto < total) estadoPagoSelect.value = 'partial';
+    else estadoPagoSelect.value = 'paid';
+    });
+
+    // --- Evento para actualizar submétodos al cambiar método ---
+    const metodoPagoSelect = document.getElementById('metodoPagoServicioSelect');
+    const submetodoPagoSelect = document.getElementById('submetodoPagoServicioSelect');
+
+    metodoPagoSelect.addEventListener('change', e => {
+        const metodoSeleccionado = metodos.find(m => m.id == e.target.value);
+        submetodoPagoSelect.innerHTML = metodoSeleccionado && metodoSeleccionado.submethods?.length > 0
+            ? metodoSeleccionado.submethods.map((s, i) => `
+                <option value="${s.id}" ${i === 0 ? 'selected' : ''}>${s.name}</option>
+            `).join('')
+            : '<option value="">-- Sin submétodos --</option>';
     });
 
     modal.show();
+
+    document.getElementById('btnPagoCompletoServicio').addEventListener('click', () => {
+        const total = Number(data.final_total) || 0;
+        const inputMontoPagado = document.getElementById('montoPagadoInput');
+
+        inputMontoPagado.value = total.toFixed(2);
+
+        // Si existe campo de pago restante, ponerlo en 0
+        const inputPagoRestante = document.getElementById('montoRestanteInput');
+        if (inputPagoRestante) {
+            inputPagoRestante.value = 0;
+        }
+
+        // Cambiar estado de pago automáticamente a "Paid"
+        estadoPagoSelect.value = "paid";
+    });
 }
 
     // Guardar y mostrar modal
@@ -1124,11 +1268,49 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(res => res.json())
             .then(data => {
                 metodosPago = data;
-                metodoPagoSelect.innerHTML = `<option value="">Seleccione un método</option>`;
-                data.forEach(m => {
-                    metodoPagoSelect.insertAdjacentHTML('beforeend', `<option value="${m.id}">${m.name}</option>`);
+                metodoPagoSelect.innerHTML = ''; // Limpiamos para evitar duplicados
+
+                // Agregar todas las opciones de métodos
+                data.forEach((m, index) => {
+                    metodoPagoSelect.insertAdjacentHTML(
+                        'beforeend',
+                        `<option value="${m.id}" ${index === 0 ? 'selected' : ''}>${m.name}</option>`
+                    );
                 });
+
+                // Seleccionar automáticamente el primer método
+                if (data.length > 0) {
+                    const primerMetodo = data[0];
+                    cargarSubmetodos(primerMetodo);
+                }
             });
+
+            
+        // Función para cargar submétodos de un método de pago
+        function cargarSubmetodos(metodo) {
+            submetodoPagoSelect.innerHTML = ''; 
+
+            if (metodo.submethods && metodo.submethods.length > 0) {
+                metodo.submethods.forEach((s, index) => {
+                    submetodoPagoSelect.insertAdjacentHTML(
+                        'beforeend',
+                        `<option value="${s.id}" ${index === 0 ? 'selected' : ''}>${s.name}</option>`
+                    );
+                });
+            } else {
+                submetodoPagoSelect.innerHTML = `<option value="">Sin submétodos disponibles</option>`;
+            }
+        }
+
+        // Cuando cambia el método de pago, actualizar submétodos
+        metodoPagoSelect.addEventListener('change', e => {
+            const metodoSeleccionado = metodosPago.find(m => m.id == e.target.value);
+            if (metodoSeleccionado) {
+                cargarSubmetodos(metodoSeleccionado);
+            } else {
+                submetodoPagoSelect.innerHTML = `<option value="">Seleccione un submétodo</option>`;
+            }
+        });
 
         // Cargar submétodos según método seleccionado 
         metodoPagoSelect.addEventListener('change', e => {

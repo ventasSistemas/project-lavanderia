@@ -245,7 +245,7 @@
                     <label class="form-label fw-semibold">Estado del Pago</label>
                     <select id="payment_status" name="payment_status" class="form-select form-select-sm">
                         <option value="pending" selected>Pendiente</option>
-                        <option value="paid">Pagado</option>
+                        <option value="paid">Pagado Completo</option>
                         <option value="partial">Incompleto</option>
                     </select>
                     </div>
