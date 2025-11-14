@@ -28,7 +28,7 @@
                     @endif
                 </a>
 
-                <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="notifDropdown" style="width: 400px;">
+                <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="notifDropdown" style="width: 400px; max-height: 350px; overflow-y: auto;">
                     <li class="dropdown-header fw-semibold text-center bg-light">Notificaciones de Ordenes</li>
 
                     @forelse($notifications as $notif)
@@ -52,77 +52,89 @@
                 </ul>
             </li>
 
+            <!-- Notificaciones de Transferencias -->
             @php
-                $productNotifications = \App\Models\ProductNotification::with('transfer.product')
-                    ->where('user_id', Auth::id())
-                    ->latest()
-                    ->take(5)
-                    ->get();
+                $user = Auth::user();
             @endphp
 
-            <!-- Notificaciones de Transferencias -->
-            <li class="nav-item dropdown me-3">
-                <a class="nav-link position-relative" href="#" id="productNotifDropdown" data-bs-toggle="dropdown">
-                    <i class="fa-solid fa-box fa-lg text-warning"></i>
-                    @if($productNotifications->where('is_read', false)->count() > 0)
-                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                            {{ $productNotifications->where('is_read', false)->count() }}
-                        </span>
-                    @endif
-                </a>
+            @if($user->role->name !== 'employee')
+                @php
+                    $productNotifications = \App\Models\ProductNotification::with('transfer.product')
+                        ->where('user_id', $user->id)
+                        ->latest()
+                        ->take(5)
+                        ->get();
+                @endphp
 
-                <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="productNotifDropdown" style="width: 400px;">
-                    <li class="dropdown-header fw-semibold text-center bg-light">Notificaciones de Productos</li>
+                <li class="nav-item dropdown me-3">
+                    <a class="nav-link position-relative" href="#" id="productNotifDropdown" data-bs-toggle="dropdown">
+                        <i class="fa-solid fa-box fa-lg text-warning"></i>
+                        @if($productNotifications->where('is_read', false)->count() > 0)
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                {{ $productNotifications->where('is_read', false)->count() }}
+                            </span>
+                        @endif
+                    </a>
 
-                    @forelse($productNotifications as $notif)
-                        <li>
-                            <a href="{{ route('admin.product-transfers.product-notifications.read', $notif->id) }} " 
-                            class="dropdown-item small {{ $notif->is_read ? 'text-muted' : 'fw-semibold text-dark' }}">
-                                <strong>{{ $notif->transfer->product->name }}</strong><br>
-                                <span>{{ $notif->message }}</span><br>
-                                <small class="text-muted">{{ $notif->created_at->diffForHumans() }}</small>
-                            </a>
-                        </li>
-                    @empty
-                        <li><div class="dropdown-item text-muted small text-center">Sin notificaciones recientes</div></li>
-                    @endforelse
-                </ul>
-            </li>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="productNotifDropdown" style="width: 400px;">
+                        <li class="dropdown-header fw-semibold text-center bg-light">Notificaciones de Productos</li>
+
+                        @forelse($productNotifications as $notif)
+                            <li>
+                                <a href="{{ route('admin.product-transfers.product-notifications.read', $notif->id) }}" 
+                                class="dropdown-item small {{ $notif->is_read ? 'text-muted' : 'fw-semibold text-dark' }}">
+                                    <strong>{{ $notif->transfer->product->name }}</strong><br>
+                                    <span>{{ $notif->message }}</span><br>
+                                    <small class="text-muted">{{ $notif->created_at->diffForHumans() }}</small>
+                                </a>
+                            </li>
+                        @empty
+                            <li><div class="dropdown-item text-muted small text-center">Sin notificaciones recientes</div></li>
+                        @endforelse
+                    </ul>
+                </li>
+            @endif
             
+            <!-- Notificaciones de Cierre de Caja -->
             @php
-                $cashNotifications = \App\Models\CashNotification::with('cashRegister.user')
-                        ->where('user_id', Auth::id())
+                $user = Auth::user();
+            @endphp
+
+            @if($user->role->name !== 'employee')
+                @php
+                    $cashNotifications = \App\Models\CashNotification::with('cashRegister.user')
+                        ->where('user_id', $user->id)
                         ->latest()
                         ->take(5)
                         ->get(); 
-            @endphp
+                @endphp
 
-            <!-- Notificaciones de Cierre de Caja -->
-            <li class="nav-item dropdown me-3">
-                <a class="nav-link position-relative" href="#" id="cashNotifDropdown" data-bs-toggle="dropdown">
-                    <i class="fa-solid fa-cash-register fa-lg text-success"></i>
-                    @if($cashNotifications->where('is_read', false)->count() > 0)
-                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                            {{ $cashNotifications->where('is_read', false)->count() }}
-                        </span>
-                    @endif
-                </a>
+                <li class="nav-item dropdown me-3">
+                    <a class="nav-link position-relative" href="#" id="cashNotifDropdown" data-bs-toggle="dropdown">
+                        <i class="fa-solid fa-cash-register fa-lg text-success"></i>
+                        @if($cashNotifications->where('is_read', false)->count() > 0)
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                {{ $cashNotifications->where('is_read', false)->count() }}
+                            </span>
+                        @endif
+                    </a>
 
-                <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="cashNotifDropdown" style="width: 400px;">
-                    <li class="dropdown-header fw-semibold text-center bg-light">Notificaciones de Caja</li>
-                    @forelse($cashNotifications as $notif)
-                        <li>
-                            <div class="dropdown-item small">
-                                <div><strong>{{ $notif->cashRegister->user->full_name }}</strong></div>
-                                <div class="text-muted">{{ $notif->message }}</div>
-                                <small class="text-muted">{{ $notif->created_at->diffForHumans() }}</small>
-                            </div>
-                        </li>
-                    @empty
-                        <li><div class="dropdown-item text-muted small text-center">Sin notificaciones recientes</div></li>
-                    @endforelse
-                </ul>
-            </li>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="cashNotifDropdown" style="width: 400px;">
+                        <li class="dropdown-header fw-semibold text-center bg-light">Notificaciones de Caja</li>
+                        @forelse($cashNotifications as $notif)
+                            <li>
+                                <div class="dropdown-item small">
+                                    <div><strong>{{ $notif->cashRegister->user->full_name }}</strong></div>
+                                    <div class="text-muted">{{ $notif->message }}</div>
+                                    <small class="text-muted">{{ $notif->created_at->diffForHumans() }}</small>
+                                </div>
+                            </li>
+                        @empty
+                            <li><div class="dropdown-item text-muted small text-center">Sin notificaciones recientes</div></li>
+                        @endforelse
+                    </ul>
+                </li>
+            @endif
 
             <li class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">

@@ -333,12 +333,18 @@ class OrderController extends Controller
         return response()->json(['next_order_number' => $nextOrderNumber]);
     }
 
+    /**
+     * Mostrar una sola orden
+     */
     public function show(Order $order)
     {
         $order->load(['items.service', 'customer', 'employee', 'status', 'branch']);
         return view('admin.orders.show', compact('order'));
     }
 
+    /**
+     * Cambio de estado de la orden
+     */
     public function changeStatus(Request $request)
     {
         $request->validate([
@@ -373,19 +379,43 @@ class OrderController extends Controller
                 ]);
                 $updatedCount++;
 
-                // Si pasa a TERMINADO, crear notificación para admin y manager
+                // Si pasa a TERMINADO, crear notificación para Admins, Managers y Employees de la sucursal
                 if ($newStatusName === 'terminado') {
-                    $admins = User::whereHas('role', fn($q) => 
-                        $q->whereIn('name', ['Admin', 'Manager'])
-                    )->get();
+                    $branchId = $order->branch_id;
 
-                    foreach ($admins as $user) {
+                    // IDs de Admins (todas las sucursales)
+                    $adminIds = User::whereHas('role', fn($q) => $q->where('name', 'admin'))
+                                    ->pluck('id')
+                                    ->toArray();
+
+                    // IDs de Managers asignados a la misma sucursal
+                    $managerIds = User::whereHas('role', fn($q) => $q->where('name', 'manager'))
+                                    ->where('branch_id', $branchId)
+                                    ->pluck('id')
+                                    ->toArray();
+
+                    // IDs de Employees que pertenecen a la misma sucursal
+                    $employeeIds = User::whereHas('role', fn($q) => $q->where('name', 'employee'))
+                                    ->where('branch_id', $branchId)
+                                    ->pluck('id')
+                                    ->toArray();
+
+                    // Unir y eliminar duplicados
+                    $recipientIds = array_unique(array_merge($adminIds, $managerIds, $employeeIds));
+
+                    // Crear notificaciones para cada destinatario
+                    foreach ($recipientIds as $userId) {
                         OrderNotification::create([
                             'order_id' => $order->id,
-                            'user_id' => $user->id,
-                            'message' => "El pedido #{$order->order_number} de {$order->customer->full_name} está terminado.",
+                            'user_id'  => $userId,
+                            'message'  => "El pedido #{$order->order_number} de {$order->customer->full_name} está terminado.",
                         ]);
                     }
+                }
+
+                // Si pasa a ENTREGADO → eliminar notificación
+                if ($newStatusName === 'entregado') {
+                    OrderNotification::where('order_id', $order->id)->delete();
                 }
             } else {
                 $blocked[] = $order->order_number;
@@ -403,18 +433,29 @@ class OrderController extends Controller
         return redirect()->back()->with('success', "Se actualizaron {$updatedCount} órdenes al estado '{$newStatus->name}'.");
     }
 
+    /**
+     * Logica de vista de pantalla de estados de las ordenes
+     */
     public function changeStatusView()
     {
+        $user = Auth::user();
+
         // Cargar los tres estados principales
         $statuses = OrderStatus::whereIn('name', ['Pendiente', 'En Proceso', 'Terminado'])->get();
 
-        // Traer las órdenes que estén en esos tres estados
-        $orders = Order::with(['customer', 'branch', 'status'])
+        // Construir la query de órdenes
+        $ordersQuery = Order::with(['customer', 'branch', 'status'])
             ->whereHas('status', function ($q) {
                 $q->whereIn('name', ['Pendiente', 'En Proceso', 'Terminado']);
             })
-            ->orderBy('created_at', 'desc')
-            ->get();
+            ->orderBy('created_at', 'desc');
+
+        // Si no es admin, filtrar por la sucursal del usuario
+        if ($user->role->name !== 'admin') {
+            $ordersQuery->where('branch_id', $user->branch_id);
+        }
+
+        $orders = $ordersQuery->get();
 
         return view('admin.orders.change-status', compact('statuses', 'orders'));
     }

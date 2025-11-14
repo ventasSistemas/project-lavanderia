@@ -16,7 +16,7 @@ class DashboardController extends Controller
         $role = $user->role->name ?? 'Empleado';
         $branchId = $user->branch_id ?? null;
 
-        // Inicializamos variables para evitar errores
+        // Inicializamos variables
         $estadoPedidos = [
             'Pendiente' => 0,
             'En proceso' => 0,
@@ -25,31 +25,27 @@ class DashboardController extends Controller
         ];
 
         $gananciasDia = $gananciasSemana = $gananciasMes = $gananciasAnio = 0;
-        $pedidosDelDia = collect();
+        $pedidosHoy = $pedidosPasados = $pedidosManana = collect();
         $ventasUltimos7Dias = [];
         $fechas = [];
 
-        // Filtrado por rol
-        $ordersQuery = Order::query()->with('status');
+        // Queries base
+        $ordersQuery = Order::query()->with('status', 'customer', 'employee');
         $cashMovementsQuery = CashMovement::query();
 
-        if ($role === 'manager' || $role === 'employee') {
-            if ($branchId) {
-                $ordersQuery->where('branch_id', $branchId);
-                $cashMovementsQuery->whereHas('cashRegister', function ($q) use ($branchId) {
-                    $q->where('branch_id', $branchId);
-                });
-            }
+        if (in_array($role, ['manager', 'employee']) && $branchId) {
+            $ordersQuery->where('branch_id', $branchId);
+            $cashMovementsQuery->whereHas('cashRegister', fn($q) => $q->where('branch_id', $branchId));
         }
 
-        // Fechas
         $today = Carbon::today();
+        $tomorrow = Carbon::tomorrow();
         $startOfWeek = Carbon::now()->startOfWeek();
         $startOfMonth = Carbon::now()->startOfMonth();
         $startOfYear = Carbon::now()->startOfYear();
 
         try {
-            // Totales de ganancias
+            // Ganancias
             $gananciasDia = (clone $cashMovementsQuery)->whereDate('movement_date', $today)->sum('amount');
             $gananciasSemana = (clone $cashMovementsQuery)->whereBetween('movement_date', [$startOfWeek, now()])->sum('amount');
             $gananciasMes = (clone $cashMovementsQuery)->whereBetween('movement_date', [$startOfMonth, now()])->sum('amount');
@@ -63,7 +59,7 @@ class DashboardController extends Controller
                 'Entregado' => (clone $ordersQuery)->whereHas('status', fn($q) => $q->where('name', 'Entregado'))->count(),
             ];
 
-            // Ventas de los últimos 7 días
+            // Ventas últimos 7 días
             for ($i = 6; $i >= 0; $i--) {
                 $fecha = now()->subDays($i)->format('Y-m-d');
                 $total = (clone $cashMovementsQuery)
@@ -74,25 +70,42 @@ class DashboardController extends Controller
                 $ventasUltimos7Dias[] = $total;
             }
 
-            // Pedidos del día
-            $pedidosDelDia = (clone $ordersQuery)
-                ->whereDate('created_at', $today)
-                ->orderBy('id', 'desc')
-                ->take(10)
-                ->get();
+            // Configurar zona horaria a Perú
+            $timezone = 'America/Lima';
+            $today = Carbon::now($timezone)->startOfDay();
+            $tomorrow = Carbon::now($timezone)->addDay()->startOfDay();
+
+            $estadosPermitidos = ['Pendiente', 'En proceso', 'Terminado'];
+
+            // Pedidos de hoy
+            $pedidosHoy = (clone $ordersQuery)
+                ->whereDate('delivery_date', $today)
+                ->whereHas('status', fn($q) => $q->whereIn('name', $estadosPermitidos))
+                ->orderBy('delivery_date', 'asc')
+                ->paginate(10, ['*'], 'hoy_page');
+
+            // Pedidos pasados
+            $pedidosPasados = (clone $ordersQuery)
+                ->whereDate('delivery_date', '<', $today)
+                ->whereHas('status', fn($q) => $q->whereIn('name', $estadosPermitidos))
+                ->orderBy('delivery_date', 'desc')
+                ->paginate(10, ['*'], 'pasados_page');
+
+            // Pedidos de mañana
+            $pedidosManana = (clone $ordersQuery)
+                ->whereDate('delivery_date', $tomorrow)
+                ->whereHas('status', fn($q) => $q->whereIn('name', $estadosPermitidos))
+                ->orderBy('delivery_date', 'asc')
+                ->paginate(10, ['*'], 'manana_page');
+
         } catch (\Throwable $e) {
+            // Manejar errores si es necesario
         }
 
         return view('admin.dashboard', compact(
-            'role',
-            'gananciasDia',
-            'gananciasSemana',
-            'gananciasMes',
-            'gananciasAnio',
-            'estadoPedidos',
-            'pedidosDelDia',
-            'ventasUltimos7Dias',
-            'fechas'
+            'pedidosHoy', 'pedidosPasados', 'pedidosManana', 'estadoPedidos',
+            'gananciasDia', 'gananciasSemana', 'gananciasMes', 'gananciasAnio',
+            'ventasUltimos7Dias', 'fechas'
         ));
     }
 }

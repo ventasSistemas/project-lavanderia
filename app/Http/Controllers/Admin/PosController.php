@@ -12,6 +12,7 @@ use App\Models\Order;
 use App\Models\OrderStatus;
 use App\Models\CashRegister;
 use App\Models\CashMovement;
+use App\Models\OrderNotification;
 use Illuminate\Support\Facades\Auth; 
 use Illuminate\Support\Facades\DB;
 
@@ -245,6 +246,17 @@ class PosController extends Controller
                 $order->update([
                     'delivered_by' => Auth::id(),
                 ]);
+            }
+
+            // Si la orden ahora está entregada
+            if ($nuevoEstadoOrden === 'entregado') {
+                // Marcar quién la entregó
+                $order->update([
+                    'delivered_by' => Auth::id(),
+                ]);
+
+                // Eliminar todas las notificaciones de esta orden
+                OrderNotification::where('order_id', $order->id)->delete();
             }
 
             DB::commit();

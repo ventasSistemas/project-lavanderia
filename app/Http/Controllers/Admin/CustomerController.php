@@ -120,12 +120,20 @@ class CustomerController extends Controller
     public function search(Request $request)
     {
         $term = $request->get('term', '');
+        $user = Auth::user();
 
-        $customers = Customer::query()
-            ->where('full_name', 'LIKE', "%{$term}%")
-            ->orWhere('document_number', 'LIKE', "%{$term}%")
-            ->limit(10)
-            ->get(['id', 'full_name']);
+        $query = Customer::query()
+            ->where(function ($q) use ($term) {
+                $q->where('full_name', 'LIKE', "%{$term}%")
+                ->orWhere('document_number', 'LIKE', "%{$term}%");
+            });
+
+        // Filtrar según el rol del usuario
+        if ($user->role->name !== 'admin') {
+            $query->where('branch_id', $user->branch_id); 
+        }
+
+        $customers = $query->limit(10)->get(['id', 'full_name']);
 
         return response()->json($customers);
     }
