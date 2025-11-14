@@ -196,6 +196,7 @@ Route::middleware('auth')->group(function () {
             Route::post('/open', [CashRegisterController::class, 'open'])->name('open');
             Route::post('/movement', [CashRegisterController::class, 'movement'])->name('movement');
             Route::post('/close', [CashRegisterController::class, 'close'])->name('close');
+            Route::post('/notifications/{id}/read', [CashRegisterController::class, 'markNotificationRead'])->name('notifications.read');
         });
 
         // Reports -> Users (solo admin y manager pueden acceder)

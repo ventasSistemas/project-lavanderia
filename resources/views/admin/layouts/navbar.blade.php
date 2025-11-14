@@ -123,11 +123,13 @@
                         <li class="dropdown-header fw-semibold text-center bg-light">Notificaciones de Caja</li>
                         @forelse($cashNotifications as $notif)
                             <li>
-                                <div class="dropdown-item small">
+                                <a href="{{ route('admin.cash.index', ['highlight' => $notif->cash_register_id]) }}" 
+                                class="dropdown-item small mark-as-read" 
+                                data-notif-id="{{ $notif->id }}">
                                     <div><strong>{{ $notif->cashRegister->user->full_name }}</strong></div>
                                     <div class="text-muted">{{ $notif->message }}</div>
                                     <small class="text-muted">{{ $notif->created_at->diffForHumans() }}</small>
-                                </div>
+                                </a>
                             </li>
                         @empty
                             <li><div class="dropdown-item text-muted small text-center">Sin notificaciones recientes</div></li>
@@ -160,6 +162,27 @@
         </ul>
     </div>
 </nav>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const links = document.querySelectorAll('.mark-as-read');
+
+    links.forEach(link => {
+        link.addEventListener('click', function(e) {
+            const notifId = this.dataset.notifId;
+
+            // Petición fetch para marcar como leída
+            fetch(`/admin/cash/notifications/${notifId}/read`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                }
+            });
+        });
+    });
+});
+</script>
 
 <style>
 /* Aplica solo a las notificaciones de productos */

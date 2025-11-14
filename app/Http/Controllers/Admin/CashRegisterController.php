@@ -95,6 +95,14 @@ class CashRegisterController extends Controller
         return back()->with('success', 'Movimiento registrado correctamente.');
     }
 
+    public function markNotificationRead($id)
+    {
+        $notif = CashNotification::findOrFail($id);
+        $notif->update(['is_read' => true]);
+
+        return response()->json(['success' => true]);
+    }
+
     public function close()
     {
         $user = Auth::user();

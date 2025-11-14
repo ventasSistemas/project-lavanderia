@@ -230,6 +230,22 @@
 </div>
 @endsection
 
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const params = new URLSearchParams(window.location.search);
+    const highlightId = params.get('highlight');
+
+    if (highlightId) {
+        const collapse = document.getElementById('collapse' + highlightId);
+        const button = document.querySelector('[data-bs-target="#collapse' + highlightId + '"]');
+        if (collapse && button) {
+            const bsCollapse = new bootstrap.Collapse(collapse, { toggle: true });
+            button.classList.remove('collapsed');
+        }
+    }
+});
+</script>
+
 <style>
     .mini-card {
         transition: transform 0.2s ease;
